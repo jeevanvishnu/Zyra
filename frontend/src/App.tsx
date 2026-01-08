@@ -1,9 +1,10 @@
 import React from 'react'
+import LoginForm from './components/forms/LoginForm'
 
 const App = () => {
   return (
-    <div className='bg-green-400'>
-      
+    <div >
+      <LoginForm/>
     </div>
   )
 }
