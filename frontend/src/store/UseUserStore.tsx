@@ -23,6 +23,7 @@ export const userAuthStore = create<AuthStore>((set)=>({
         try {
             const res = await axios.post('/api/auth/signup',{name, email, password})
             set({user:res.data})
+            toast.success("Signup sucessfull")
         } catch (error) {
              set({isLoading:false})
              toast.error(error?.response?.data?.message || 'An error occurred')
@@ -35,6 +36,7 @@ export const userAuthStore = create<AuthStore>((set)=>({
         try {
             const res = await axios.post('/api/auth/login',{email, password})
             set({user:res?.data})
+            toast.success("Login sucessfull")
         } catch (error) {
             set({isLoading:false})
              toast.error(error?.response?.data?.message || 'An error occurred')
