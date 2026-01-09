@@ -3,8 +3,9 @@ import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { Button } from "../components/ui/button";
 import LogoImage from "../assets/LogoImage.png";
-
+import { userAuthStore } from '@/store/UseUserStore';
 const LoginPage = () => {
+  const {isLoading , login} = userAuthStore()
   const [formData, setFormData] = useState({
     email: '',
     password: ''
@@ -17,6 +18,8 @@ const LoginPage = () => {
 
   const [showPassword, setShowPassword] = useState(false);
 
+
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { id, value } = e.target;
     setFormData(prev => ({ ...prev, [id]: value }));
@@ -24,6 +27,7 @@ const LoginPage = () => {
     // Clear error when user starts typing
     if (errors[id as keyof typeof errors]) {
       setErrors(prev => ({ ...prev, [id]: '' }));
+
     }
   };
 
@@ -61,6 +65,8 @@ const LoginPage = () => {
     e.preventDefault();
 
     if (validateForm()) {
+      console.log(formData.email , formData.password);
+      login(formData)
       console.log('Login form submitted:', formData);
       // Add your login logic here
     }
@@ -163,8 +169,9 @@ const LoginPage = () => {
               <Button
                 type="submit"
                 className="w-full bg-white text-black hover:bg-gray-200 md:bg-black md:text-white md:hover:bg-gray-800 font-bold shadow-lg transition-transform hover:scale-[1.02]"
+                disabled={isLoading}
               >
-                Sign in
+                Login in
               </Button>
 
               <div className="relative my-6">
