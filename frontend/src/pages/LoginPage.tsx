@@ -4,6 +4,7 @@ import { Label } from "../components/ui/label";
 import { Button } from "../components/ui/button";
 import LogoImage from "../assets/LogoImage.png";
 import { userAuthStore } from '@/store/UseUserStore';
+import { Link } from 'react-router-dom';
 const LoginPage = () => {
   const {isLoading , login} = userAuthStore()
   const [formData, setFormData] = useState({
@@ -214,12 +215,12 @@ const LoginPage = () => {
 
             <p className="mt-8 text-center text-sm text-gray-400 md:text-gray-600">
               Don't have an account?{" "}
-              <a
-                href="#"
+              <Link to={'/signup'}
+                
                 className="font-bold text-white md:text-black hover:underline"
               >
                 Sign up
-              </a>
+              </Link>
             </p>
           </div>
         </div>

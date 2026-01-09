@@ -3,7 +3,6 @@ import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { Button } from "../components/ui/button";
 import LogoImage from "../assets/LogoImage.png";
-
 const SignupPage = () => {
     const [formData, setFormData] = useState({
         name: '',
