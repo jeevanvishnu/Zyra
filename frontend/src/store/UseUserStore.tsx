@@ -2,6 +2,7 @@ import {create} from "zustand"
 import toast from "react-hot-toast"
 import  axios from '../lib/axios'
 
+
  interface AuthStore {
   user: any,
   isLoading: boolean;
@@ -38,6 +39,7 @@ export const userAuthStore = create<AuthStore>((set)=>({
 
         try {
             const res = await axios.post('/api/auth/login',{email, password})
+            console.log(res.data,"zus")
             set({user:res?.data})
             toast.success("Login sucessfull")
         } catch (error) {
@@ -45,6 +47,7 @@ export const userAuthStore = create<AuthStore>((set)=>({
              toast.error(error?.response?.data?.message || 'An error occurred')
         }
     },
+
     checkAuth: async () =>{
         set({checkingAuth:true})
 
