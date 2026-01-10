@@ -5,6 +5,8 @@ import  axios from '../lib/axios'
  interface AuthStore {
   user: any,
   isLoading: boolean;
+  checkingAuth:boolean,
+  checkAuth:(data:string)=>Promise<void>
   signup: (data: SignupPayload) => Promise<void>;
   login: (data: LoginPayload) => Promise<void>;
 }
@@ -12,6 +14,7 @@ import  axios from '../lib/axios'
 export const userAuthStore = create<AuthStore>((set)=>({
     user:null,
     isLoading:false,
+    checkingAuth:false,
 
     signup:async ({name, email, password, confirmPassword}) =>{
         set({isLoading:true})
@@ -40,6 +43,17 @@ export const userAuthStore = create<AuthStore>((set)=>({
         } catch (error) {
             set({isLoading:false})
              toast.error(error?.response?.data?.message || 'An error occurred')
+        }
+    },
+    checkAuth: async () =>{
+        set({checkingAuth:true})
+
+        try{
+            const res = await axios.get('/api/auth/profile')
+            set({user:res.data , checkingAuth:false })
+        }catch(err){
+            set({checkingAuth:true , user:null})
+            toast.error(err?.response?.data?.message || 'An error occurred')
         }
     }
 }))
