@@ -1,9 +1,10 @@
-import { useState } from 'react'
-import LoginPage from './pages/LoginPage'
-import { Toaster } from "react-hot-toast"
-import { Routes, Route , Navigate} from 'react-router-dom'
-import SignupPage from './pages/SignupPage'
-import Navbar from './components/Navbar'
+import { useEffect, useState } from 'react';
+import { Routes, Route, Navigate } from 'react-router-dom';
+import { Toaster } from 'react-hot-toast';
+import Navbar from './components/Navbar';
+import Home from './pages/Home';
+import LoginPage from './pages/LoginPage';
+import SignupPage from './pages/SignupPage';
 import { userAuthStore } from '@/store/UseUserStore';
 
 const App = () => {
@@ -16,7 +17,11 @@ const App = () => {
     // Implement your search logic here
   };
 
-  const {user} = userAuthStore()
+  const { user , checkAuth} = userAuthStore()
+
+  useEffect(()=>{
+    checkAuth()
+  },[checkAuth])
 
   return (
     <div className="min-h-screen bg-background">
@@ -27,18 +32,9 @@ const App = () => {
       />
 
       <Routes>
-        <Route path='/' element={
-          <div className="max-w-7xl mx-auto px-4 py-12">
-            <h1 className="text-4xl font-bold text-center bg-gradient-to-r from-gray-900 to-gray-700 dark:from-gray-100 dark:to-gray-300 bg-clip-text text-transparent">
-              Welcome to Zyra
-            </h1>
-            <p className="text-center text-muted-foreground mt-4">
-              Your one-stop shop for everything you need!
-            </p>
-          </div>
-        } />
-        <Route path='/login' element={!user ?<LoginPage /> : <Navigate to={'/'}/> }/>
-        <Route path='/signup' element={! user ? <SignupPage /> : <Navigate to={'/'}/>} />
+        <Route path='/' element={<Home />} />
+        <Route path='/login' element={!user ? <LoginPage /> : <Navigate to={'/'} />} />
+        <Route path='/signup' element={!user ? <SignupPage /> : <Navigate to={'/'} />} />
         <Route path='/cart' element={
           <div className="max-w-7xl mx-auto px-4 py-12">
             <h1 className="text-3xl font-bold">Shopping Cart ({cartCount} items)</h1>

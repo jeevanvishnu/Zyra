@@ -25,8 +25,7 @@ export default function Navbar({
     };
 
     const { user } = userAuthStore()
-    console.log("....", user.name);
-
+    
 
     return (
         <nav className="sticky top-0 z-50 w-full bg-white/80 dark:bg-card/80 backdrop-blur-lg border-b border-border shadow-sm">
