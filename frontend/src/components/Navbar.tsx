@@ -24,7 +24,7 @@ export default function Navbar({
         }
     };
 
-    const { user } = userAuthStore()
+    const { user , logout } = userAuthStore()
     
 
     return (
@@ -89,12 +89,15 @@ export default function Navbar({
                         {/* Login Button - Desktop */}
                         {/* User Profile - Desktop */}
                         {user ? (
-                            <div className="hidden sm:flex items-center gap-2 pl-2 pr-4 py-1.5 bg-secondary/50 border border-border rounded-full hover:bg-secondary transition-colors duration-300">
+                            <>
+                            <button  onClick={logout}>Logout</button>
+                            <div  className="hidden sm:flex items-center gap-2 pl-2 pr-4 py-1.5 bg-secondary/50 border border-border rounded-full hover:bg-secondary transition-colors duration-300">
                                 <div className="p-1.5 bg-gradient-to-r from-gray-900 to-gray-700 dark:from-gray-100 dark:to-gray-300 rounded-full text-white dark:text-gray-900">
                                     <User className="w-4 h-4" />
                                 </div>
-                                <span className="font-semibold text-sm max-w-[100px] truncate">{user.name}</span>
+                                <span  className="font-semibold text-sm max-w-[100px] truncate">{user.name}</span>
                             </div>
+                            </>
                         ) : (
                             <Link
                                 to="/login"
@@ -103,6 +106,7 @@ export default function Navbar({
                                 <User className="w-4 h-4" />
                                 <span>Login</span>
                             </Link>
+                            
                         )}
                         {/* Mobile Menu Button */}
                         <button

@@ -10,7 +10,7 @@ interface AuthStore {
     checkAuth: () => Promise<void>
     signup: (data: SignupPayload) => Promise<void>;
     login: (data: LoginPayload) => Promise<void>;
-    logout: (data: string) => Promisse<void>
+    logout: (data: LogoutPlayoad) => Promise<void>
     refershToken: (data: string) => Promise<void>
 }
 
@@ -41,7 +41,6 @@ export const userAuthStore = create<AuthStore>((set, get) => ({
 
         try {
             const res = await axios.post('/api/auth/login', { email, password })
-            console.log(res.data, "zus")
             set({ user: res?.data })
             toast.success("Login sucessfull")
         } catch (error) {
@@ -62,8 +61,9 @@ export const userAuthStore = create<AuthStore>((set, get) => ({
         }
     },
     logout: async () => {
+        console.log("inside")
         try {
-            const res = await axios.get('/api/auth/logout')
+             await axios.post('/api/auth/logout')
             set({ user: null })
             toast.success("Logout sucessfull")
         } catch (error) {
