@@ -2,9 +2,9 @@ import { useEffect, useState } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import Navbar from './components/Navbar';
-import Home from './pages/Home';
-import LoginPage from './pages/LoginPage';
-import SignupPage from './pages/SignupPage';
+import Home from './users/pages/Home';
+import LoginPage from './users/pages/LoginPage';
+import SignupPage from './users/pages/SignupPage';
 import { userAuthStore } from '@/store/UseUserStore';
 
 const App = () => {

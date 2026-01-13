@@ -1,6 +1,6 @@
 import { ArrowRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import ProductCard from '../components/ProductCard';
+import ProductCard from '../../components/ProductCard';
 
 // Mock Data
 const PRODUCTS = [
