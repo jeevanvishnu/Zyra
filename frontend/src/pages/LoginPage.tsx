@@ -197,6 +197,7 @@ const LoginPage = () => {
               </div>
 
               <Button
+              onClick={()=>window.location.href='http://localhost:4001/api/auth/google'}
                 variant="outline"
                 type="button"
                 className="w-full bg-white border-transparent md:border md:border-gray-300 hover:bg-gray-50 md:hover:bg-gray-50 text-gray-700"
