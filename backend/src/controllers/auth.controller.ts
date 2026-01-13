@@ -9,16 +9,16 @@ const setCookies = (res: Response, accessToken: string, refreshToken: string) =>
     res.cookie("accessToken", accessToken, {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
-        sameSite: "strict",
+        sameSite: "lax", // Lax for OAuth compatibility
         maxAge: 15 * 60 * 1000,
-    }),
+    });
 
-        res.cookie("refreshToken", refreshToken, {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === "production",
-            sameSite: "strict",
-            maxAge: 7 * 24 * 60 * 60 * 1000,
-        })
+    res.cookie("refreshToken", refreshToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax", // Lax for OAuth compatibility
+        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    });
 }
 
 export const login = async (req: Request, res: Response) => {
@@ -37,11 +37,14 @@ export const login = async (req: Request, res: Response) => {
             return res.status(500).json({ message: "password doesn't match" })
         }
 
-        const { accessToken, refreshToken } = generateToken(user._id)
-        setCookies(res, accessToken, refreshToken)
+        const { accessToken, refreshToken } = generateToken(user._id);
 
+        user.refreshToken = refreshToken;
+        await user.save();
 
-        res.status(200).json({ _id: user._id, email: user.email, name: user.name, message: "Login sucessfully" })
+        setCookies(res, accessToken, refreshToken);
+
+        res.status(200).json({ _id: user._id, email: user.email, name: user.name, message: "Login successfully" })
     } catch (error) {
         console.log("error is from login", error);
         res.status(500).json({ message: "Internal server error" })
@@ -111,9 +114,14 @@ export const refreshToken = async (req: Request, res: Response) => {
             return res.status(403).json({ message: "Invaild refresh token" })
         }
 
-        const newAccessToken = generateToken(user.id);
+        const { accessToken, refreshToken: newRefreshToken } = generateToken(user._id);
 
-        res.json({ accessToken: newAccessToken })
+        user.refreshToken = newRefreshToken;
+        await user.save();
+
+        setCookies(res, accessToken, newRefreshToken);
+
+        res.json({ message: "Token refreshed successfully" });
 
     } catch (err) {
         return res.status(403).json({ message: "Refresh token expired" });
@@ -126,5 +134,41 @@ export const getProfile = async (req: Request, res: Response) => {
 
     } catch (error) {
         return res.status(500).json({ message: "Internal server error" });
+    }
+}
+
+export const authGoogleCallback = async (req: Request, res: Response) => {
+    try {
+        const { displayName, emails } = req.user as any;
+        const email = emails?.[0]?.value;
+
+        if (!email) {
+            return res.redirect("http://localhost:5173/login?error=GoogleAuthNoEmail");
+        }
+
+        let user = await User.findOne({ email });
+
+        if (!user) {
+            const randomPassword = Math.random().toString(36).slice(-8) + Math.random().toString(36).slice(-8);
+            const hashedPassword = await bcrypt.hash(randomPassword, 10);
+
+            user = await User.create({
+                name: displayName || "User",
+                email: email,
+                password: hashedPassword,
+            });
+        }
+
+        const { accessToken, refreshToken } = generateToken(user._id);
+
+        user.refreshToken = refreshToken;
+        await user.save();
+
+        setCookies(res, accessToken, refreshToken);
+
+        res.redirect("http://localhost:5173");
+    } catch (error) {
+        console.log("Error in google callback", error);
+        res.redirect("http://localhost:5173/login");
     }
 }
