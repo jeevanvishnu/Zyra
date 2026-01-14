@@ -1,6 +1,40 @@
-import { Search, Filter, Eye } from "lucide-react";
+import { Search, Filter, Eye, ChevronLeft, ChevronRight } from "lucide-react";
+import { useState } from "react";
 
 const Orders = () => {
+    const [currentPage, setCurrentPage] = useState(1);
+    const [orders, setOrders] = useState(
+        Array.from({ length: 12 }, (_, i) => ({
+            id: 101 + i,
+            customer: "John Doe",
+            date: "Oct 24, 2024",
+            total: 129.00,
+            status: i % 3 === 0 ? "Delivered" : i % 3 === 1 ? "Pending" : "Cancelled"
+        }))
+    );
+    const itemsPerPage = 5;
+
+    // Pagination logic
+    const indexOfLastItem = currentPage * itemsPerPage;
+    const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+    const currentItems = orders.slice(indexOfFirstItem, indexOfLastItem);
+    const totalPages = Math.ceil(orders.length / itemsPerPage);
+
+    const handleStatusChange = (id: number, newStatus: string) => {
+        setOrders(orders.map(order =>
+            order.id === id ? { ...order, status: newStatus } : order
+        ));
+    };
+
+    const getStatusColor = (status: string) => {
+        switch (status) {
+            case 'Delivered': return 'bg-green-100 text-green-700';
+            case 'Pending': return 'bg-yellow-100 text-yellow-700';
+            case 'Cancelled': return 'bg-red-100 text-red-700';
+            default: return 'bg-gray-100 text-gray-700';
+        }
+    };
+
     return (
         <div className="space-y-6">
             <div className="flex justify-between items-center">
@@ -36,21 +70,27 @@ const Orders = () => {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-100">
-                            {[1, 2, 3, 4, 5].map((item) => (
-                                <tr key={item} className="hover:bg-gray-50/50 transition-colors">
-                                    <td className="p-4 font-medium text-gray-900">#ORD-2024-{100 + item}</td>
+                            {currentItems.map((item) => (
+                                <tr key={item.id} className="hover:bg-gray-50/50 transition-colors">
+                                    <td className="p-4 font-medium text-gray-900">#ORD-2024-{item.id}</td>
                                     <td className="p-4">
                                         <div className="flex items-center gap-2">
-                                            <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-xs font-bold">JD</div>
-                                            <span className="text-gray-700">John Doe</span>
+                                            <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-xs font-bold text-gray-600">JD</div>
+                                            <span className="text-gray-700">{item.customer}</span>
                                         </div>
                                     </td>
-                                    <td className="p-4 text-gray-500">Oct 24, 2024</td>
-                                    <td className="p-4 font-medium">$129.00</td>
+                                    <td className="p-4 text-gray-500">{item.date}</td>
+                                    <td className="p-4 font-medium">${item.total.toFixed(2)}</td>
                                     <td className="p-4">
-                                        <span className="px-2 py-1 bg-yellow-100 text-yellow-700 rounded-full text-xs font-medium">
-                                            Pending
-                                        </span>
+                                        <select
+                                            value={item.status}
+                                            onChange={(e) => handleStatusChange(item.id, e.target.value)}
+                                            className={`px-3 py-1 rounded-full text-xs font-medium border-0 cursor-pointer focus:ring-2 focus:ring-black/5 ${getStatusColor(item.status)}`}
+                                        >
+                                            <option value="Pending">Pending</option>
+                                            <option value="Delivered">Delivered</option>
+                                            <option value="Cancelled">Cancelled</option>
+                                        </select>
                                     </td>
                                     <td className="p-4">
                                         <button className="p-2 hover:bg-gray-100 rounded-lg text-gray-600 transition-colors">
@@ -61,6 +101,41 @@ const Orders = () => {
                             ))}
                         </tbody>
                     </table>
+                </div>
+
+                {/* Pagination */}
+                <div className="p-4 border-t border-gray-100 flex items-center justify-between text-sm text-gray-600">
+                    <div>
+                        Showing {indexOfFirstItem + 1} to {Math.min(indexOfLastItem, orders.length)} of {orders.length} entries
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <button
+                            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                            disabled={currentPage === 1}
+                            className="p-2 border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            <ChevronLeft size={16} />
+                        </button>
+                        {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                            <button
+                                key={page}
+                                onClick={() => setCurrentPage(page)}
+                                className={`w-8 h-8 rounded-lg flex items-center justify-center ${currentPage === page
+                                        ? 'bg-black text-white'
+                                        : 'border border-gray-200 hover:bg-gray-50'
+                                    }`}
+                            >
+                                {page}
+                            </button>
+                        ))}
+                        <button
+                            onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                            disabled={currentPage === totalPages}
+                            className="p-2 border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            <ChevronRight size={16} />
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
