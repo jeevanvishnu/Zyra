@@ -4,7 +4,8 @@ interface userData {
     name:string,
     password:string,
     email:string,
-    refreshToken:string
+    refreshToken:string,
+    role:string
 }
 
 const userSchema = new Schema<userData>({
@@ -24,6 +25,11 @@ const userSchema = new Schema<userData>({
     refreshToken:{
         type:String
     },
+    role:{
+        type:String,
+        enum:["admin","customer"],
+        default:'customer'
+    }
 },{timestamps:true})
 
 const User = mongoose.model("User",userSchema)

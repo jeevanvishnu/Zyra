@@ -44,7 +44,7 @@ export const login = async (req: Request, res: Response) => {
 
         setCookies(res, accessToken, refreshToken);
 
-        res.status(200).json({ _id: user._id, email: user.email, name: user.name, message: "Login successfully" })
+        res.status(200).json({ _id: user._id, email: user.email, name: user.name,role:user.role, message: "Login successfully" })
     } catch (error) {
         console.log("error is from login", error);
         res.status(500).json({ message: "Internal server error" })

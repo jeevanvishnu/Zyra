@@ -28,8 +28,8 @@ export const userAuthStore = create<AuthStore>((set, get) => ({
         }
         try {
             const res = await axios.post('/api/auth/signup', { name, email, password })
-            set({ user: res.data })
-            toast.success("Signup sucessfull")
+            set({ user: res.data, isLoading: false })
+            toast.success("Signup successful")
         } catch (error) {
             set({ isLoading: false })
             toast.error(error?.response?.data?.message || 'An error occurred')
@@ -41,8 +41,11 @@ export const userAuthStore = create<AuthStore>((set, get) => ({
 
         try {
             const res = await axios.post('/api/auth/login', { email, password })
-            set({ user: res?.data })
-            toast.success("Login sucessfull")
+            console.log(res);
+            
+            set({ user: res?.data, isLoading: false })
+            toast.success("Login successful")
+            return res.data
         } catch (error) {
             set({ isLoading: false })
             toast.error(error?.response?.data?.message || 'An error occurred')
@@ -63,7 +66,7 @@ export const userAuthStore = create<AuthStore>((set, get) => ({
     logout: async () => {
         console.log("inside")
         try {
-             await axios.post('/api/auth/logout')
+            await axios.post('/api/auth/logout')
             set({ user: null })
             toast.success("Logout sucessfull")
         } catch (error) {

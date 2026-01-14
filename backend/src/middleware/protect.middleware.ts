@@ -1,7 +1,7 @@
 import User from "../model/user.ts";
 import express from "express"
 import jwt from "jsonwebtoken"
-import type { Request, Response } from "express"
+import type { NextFunction, Request, Response } from "express"
 
 export const protectRoute = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -35,4 +35,13 @@ export const protectRoute = async (req: Request, res: Response, next: NextFuncti
     console.error("Error in protectRoute middleware:", error.message)
     return res.status(500).json({ message: "Internal server error" })
   }
+}
+
+export const adminRoute = (req:Request , res:Response ,next:NextFunction) =>{
+  if(req.user && req.user.role === "Admin"){
+    next()
+  }else{
+    return res.status(403).json({ message: "Access denied - Admin only" });
+  }
+
 }
