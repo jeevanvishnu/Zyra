@@ -4,6 +4,7 @@ import cookieParser from "cookie-parser"
 import connectionDb from "./lib/db.ts";
 import cors from "cors"
 import authRoutes from './routes/auth.route.ts'
+import productRoutes from './routes/admin/products.routes.ts'
 import '../src/lib/passport.ts'
 import passport from 'passport';
 const app = express();
@@ -19,6 +20,7 @@ app.use(cors({
 
 app.use(passport.initialize())
 app.use('/api/auth', authRoutes)
+app.use('/api/products',productRoutes)
 
 const PORT = process.env.PORT || 3000
 const start = () => {

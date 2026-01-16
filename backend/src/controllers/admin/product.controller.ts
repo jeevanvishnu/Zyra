@@ -1,9 +1,10 @@
 import User from "../../model/user.ts";
-import express from "express";
-import { Response } from "express";
-import { Request } from "express";
+import type { Response } from "express";
+import type { Request } from "express";
 import { log } from "node:console";
 import { Products } from "../../model/productmodel.ts";
+import cloudinary from "../../lib/cloudinary.ts";
+
 
 export const getAllProducts = async (req: Request, res: Response) => {
   try {
@@ -17,6 +18,7 @@ export const getAllProducts = async (req: Request, res: Response) => {
 
 export const addProducts = async (req: Request, res: Response) => {
   try {
+    let cloudinaryResponse = null
     const { productName, price, stock, isActive, category, description } =
       req.body;
     const { image } = req.files as any;
@@ -28,13 +30,15 @@ export const addProducts = async (req: Request, res: Response) => {
       return res.status(400).json({ message: "Please upload images" });
     }
 
+    cloudinaryResponse = await cloudinary.uploader.upload('image',{folder:'product'})
+
     const product = await Products.create({
       price,
       stock,
       ProductName: productName,
       category,
       description,
-      image,
+      image:cloudinaryResponse?.secure_url ? cloudinaryResponse?.secure_url : '',
       isActive,
     });
     res.status(201).json({
@@ -46,3 +50,5 @@ export const addProducts = async (req: Request, res: Response) => {
     res.status(500).json({ message: "Add Product failed" });
   }
 };
+
+

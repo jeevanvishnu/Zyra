@@ -32,7 +32,7 @@ const ProductsModel = new Schema<productInterface>({
         required:true
     },
     image:{
-        string
+        type:String
     },
     isActive:{
         type:Boolean,
