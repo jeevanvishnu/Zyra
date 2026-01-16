@@ -6,7 +6,8 @@ interface productInterface  {
     price:number,
     category:string,
     description:string,
-    isActive:boolean
+    isActive:boolean,
+    image:string
 }
 
 const ProductsModel = new Schema<productInterface>({
@@ -29,6 +30,9 @@ const ProductsModel = new Schema<productInterface>({
     description:{
         type:String,
         required:true
+    },
+    image:{
+        string
     },
     isActive:{
         type:Boolean,
