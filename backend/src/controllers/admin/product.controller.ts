@@ -8,7 +8,8 @@ import cloudinary from "../../lib/cloudinary.ts";
 
 export const getAllProducts = async (req: Request, res: Response) => {
   try {
-    const products = await User.find({});
+    const products = await Products.find({});
+    console.log(products,"...ba")
     res.json(products);
   } catch (error) {
     log("Error coming from getAllProduct ", error.message);
@@ -16,31 +17,61 @@ export const getAllProducts = async (req: Request, res: Response) => {
   }
 };
 
+
+
 export const addProducts = async (req: Request, res: Response) => {
   try {
-    let cloudinaryResponse = null
     const { productName, price, stock, isActive, category, description } =
       req.body;
-    const { image } = req.files as any;
 
+    
     if (!productName || !price || !category || !description || !stock) {
-      return res.status(400).json({ message: "All field required" });
-    }
-    if (!req.files || (req.files as Express.Multer.File[]).length === 0) {
-      return res.status(400).json({ message: "Please upload images" });
+      return res.status(400).json({ message: "All fields are required" });
     }
 
-    cloudinaryResponse = await cloudinary.uploader.upload('image',{folder:'product'})
+    
+    if (!req.files || !Array.isArray(req.files) || req.files.length === 0) {
+      return res.status(400).json({ message: "Please upload at least one image (max 3)" });
+    }
 
+   
+    if (req.files.length > 3) {
+      return res.status(400).json({ message: "Maximum 3 images allowed" });
+    }
+
+    // Upload all images to Cloudinary
+    const imageUrls: string[] = [];
+
+    for (const file of req.files as Express.Multer.File[]) {
+      try {
+        // Convert buffer to base64 data URI
+        const b64 = Buffer.from(file.buffer).toString('base64');
+        const dataURI = `data:${file.mimetype};base64,${b64}`;
+
+        // Upload to Cloudinary
+        const cloudinaryResponse = await cloudinary.uploader.upload(dataURI, {
+          folder: 'products',
+          resource_type: 'auto'
+        });
+
+        imageUrls.push(cloudinaryResponse.secure_url);
+      } catch (uploadError) {
+        log("Error uploading image to Cloudinary:", uploadError);
+        return res.status(500).json({ message: "Failed to upload images" });
+      }
+    }
+
+    // Create product with all uploaded images
     const product = await Products.create({
-      price,
-      stock,
+      price: Number(price),
+      stock: Number(stock),
       ProductName: productName,
       category,
       description,
-      image:cloudinaryResponse?.secure_url ? cloudinaryResponse?.secure_url : '',
-      isActive,
+      images: imageUrls,
+      isActive: isActive === 'true' || isActive === true,
     });
+
     res.status(201).json({
       message: "Product created successfully",
       product,

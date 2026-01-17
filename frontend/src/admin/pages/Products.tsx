@@ -1,32 +1,49 @@
 import { Plus, Search, Filter, Edit, Trash2, X, Upload, ChevronLeft, ChevronRight, Image as Img } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useProductStore } from "@/store/useProductStore";
 
 const Products = () => {
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const [currentPage, setCurrentPage] = useState(1);
-    const [products] = useState([
-        { id: 1, name: "Premium Headphones", category: "Electronics", price: 299.00, stock: 45, status: "Active", image: "" },
-        { id: 2, name: "Ergonomic Chair", category: "Furniture", price: 199.00, stock: 12, status: "Active", image: "" },
-        { id: 3, name: "Mechanical Keyboard", category: "Electronics", price: 159.00, stock: 25, status: "Active", image: "" },
-        { id: 4, name: "Wireless Mouse", category: "Electronics", price: 49.00, stock: 60, status: "Active", image: "" },
-        { id: 5, name: "Standing Desk", category: "Furniture", price: 499.00, stock: 8, status: "Draft", image: "" },
-        { id: 6, name: "Gaming Monitor", category: "Electronics", price: 399.00, stock: 15, status: "Active", image: "" },
-        { id: 7, name: "Desk Lamp", category: "Furniture", price: 29.00, stock: 100, status: "Active", image: "" },
-    ]);
+
+    const { products, addProduct, getAllProducts, loading } = useProductStore();
+
+    useEffect(() => {
+        getAllProducts()
+    }, [])
+
     const itemsPerPage = 5;
 
-    // Image upload state
-    const [images, setImages] = useState<(string | null)[]>([null, null, null]);
+    // Form state
+    const [formData, setFormData] = useState({
+        productName: '',
+        price: '',
+        stock: '',
+        category: '',
+        description: '',
+        isActive: true,
+    });
+
+    // Image upload state - store File objects instead of base64
+    const [imageFiles, setImageFiles] = useState<(File | null)[]>([null, null, null]);
+    const [imagePreviews, setImagePreviews] = useState<(string | null)[]>([null, null, null]);
+    const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
     const handleImageUpload = (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file) {
+            // Store the actual File object
+            const newFiles = [...imageFiles];
+            newFiles[index] = file;
+            setImageFiles(newFiles);
+
+            // Create preview
             const reader = new FileReader();
             reader.onloadend = () => {
-                const newImages = [...images];
-                newImages[index] = reader.result as string;
-                setImages(newImages);
+                const newPreviews = [...imagePreviews];
+                newPreviews[index] = reader.result as string;
+                setImagePreviews(newPreviews);
             };
             reader.readAsDataURL(file);
         }
@@ -34,9 +51,59 @@ const Products = () => {
 
     const removeImage = (index: number, e: React.MouseEvent) => {
         e.stopPropagation();
-        const newImages = [...images];
-        newImages[index] = null;
-        setImages(newImages);
+        const newFiles = [...imageFiles];
+        newFiles[index] = null;
+        setImageFiles(newFiles);
+
+        const newPreviews = [...imagePreviews];
+        newPreviews[index] = null;
+        setImagePreviews(newPreviews);
+    };
+
+    const validateForm = () => {
+        const newErrors: { [key: string]: string } = {};
+
+        if (!formData.productName.trim()) {
+            newErrors.productName = 'Product name is required';
+        }
+
+        if (!formData.price || Number(formData.price) <= 0) {
+            newErrors.price = 'Price must be greater than 0';
+        }
+
+        if (!formData.stock || Number(formData.stock) < 0) {
+            newErrors.stock = 'Stock must be 0 or greater';
+        }
+
+        if (!formData.category) {
+            newErrors.category = 'Category is required';
+        }
+
+        if (!formData.description.trim()) {
+            newErrors.description = 'Description is required';
+        }
+
+        const hasImages = imageFiles.some(file => file !== null);
+        if (!hasImages) {
+            newErrors.images = 'At least one image is required';
+        }
+
+        setErrors(newErrors);
+        return Object.keys(newErrors).length === 0;
+    };
+
+    const resetForm = () => {
+        setFormData({
+            productName: '',
+            price: '',
+            stock: '',
+            category: '',
+            description: '',
+            isActive: true,
+        });
+        setImageFiles([null, null, null]);
+        setImagePreviews([null, null, null]);
+        setErrors({});
     };
 
     // Pagination logic
@@ -45,12 +112,38 @@ const Products = () => {
     const currentItems = products.slice(indexOfFirstItem, indexOfLastItem);
     const totalPages = Math.ceil(products.length / itemsPerPage);
 
-    const handleAddProduct = (e: React.FormEvent) => {
+    const handleAddProduct = async (e: React.FormEvent) => {
         e.preventDefault();
-        // Mock submission
-        setIsAddModalOpen(false);
-        // Toast notification would go here
-        console.log("Product added");
+
+        // Validate form
+        if (!validateForm()) {
+            return;
+        }
+
+        // Create FormData object
+        const data = new FormData();
+        data.append('productName', formData.productName);
+        data.append('price', formData.price);
+        data.append('stock', formData.stock);
+        data.append('category', formData.category);
+        data.append('description', formData.description);
+        data.append('isActive', String(formData.isActive));
+
+        // Append all image files with the same field name 'image'
+        imageFiles.forEach((file) => {
+            if (file) {
+                data.append('image', file);
+            }
+        });
+
+        try {
+            await addProduct(data);
+            setIsAddModalOpen(false);
+            resetForm();
+        } catch (error) {
+            // Error is handled in the store
+            console.error('Failed to add product:', error);
+        }
     };
 
     return (
@@ -97,31 +190,36 @@ const Products = () => {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-100">
-                            {currentItems.map((item) => (
-                                <tr key={item.id} className="hover:bg-gray-50/50 transition-colors">
+                            {products.map((item) => (
+                                <tr key={item._id} className="hover:bg-gray-50/50 transition-colors">
                                     <td className="p-4 flex items-center gap-3">
                                         <div className="w-12 h-12 bg-gray-100 rounded-lg overflow-hidden">
-                                            {item.image ? (
-                                                <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
+                                            {item.images && item.images.length > 0 ? (
+                                                <img
+                                                    src={item.images[0]}
+                                                    alt={item.ProductName}
+                                                    className="w-full h-full object-cover"
+                                                />
                                             ) : (
                                                 <div className="w-full h-full flex items-center justify-center text-gray-400">
                                                     <Img size={20} />
                                                 </div>
                                             )}
+
                                         </div>
                                         <div>
-                                            <p className="font-medium text-gray-900">{item.name}</p>
+                                            <p className="font-medium text-gray-900">{item.ProductName}</p>
                                         </div>
                                     </td>
                                     <td className="p-4 text-gray-600">{item.category}</td>
-                                    <td className="p-4 font-medium">${item.price.toFixed(2)}</td>
+                                    <td className="p-4 font-medium">${item?.price?.toFixed(2)}</td>
                                     <td className="p-4 text-gray-600">{item.stock} in stock</td>
                                     <td className="p-4">
-                                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${item.status === 'Active'
+                                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${item.isActive === true
                                             ? 'bg-green-100 text-green-700'
                                             : 'bg-gray-100 text-gray-700'
-                                            }`}>
-                                            {item.status}
+                                            }`}>{item?.isActive === true ? "Active" : "UnActive"}
+                                            {item?.isActive}
                                         </span>
                                     </td>
                                     <td className="p-4">
@@ -215,15 +313,15 @@ const Products = () => {
                                                     />
                                                     <label
                                                         htmlFor={`image-upload-${index}`}
-                                                        className={`w-full h-full border-2 border-dashed rounded-xl flex flex-col items-center justify-center cursor-pointer transition-colors ${images[index]
-                                                                ? 'border-transparent'
-                                                                : 'border-gray-200 hover:border-black/20 hover:bg-gray-50'
+                                                        className={`w-full h-full border-2 border-dashed rounded-xl flex flex-col items-center justify-center cursor-pointer transition-colors ${imagePreviews[index]
+                                                            ? 'border-transparent'
+                                                            : errors.images ? 'border-red-300 hover:border-red-400' : 'border-gray-200 hover:border-black/20 hover:bg-gray-50'
                                                             }`}
                                                     >
-                                                        {images[index] ? (
+                                                        {imagePreviews[index] ? (
                                                             <>
                                                                 <img
-                                                                    src={images[index] as string}
+                                                                    src={imagePreviews[index] as string}
                                                                     alt={`Product ${index + 1}`}
                                                                     className="w-full h-full object-cover rounded-xl"
                                                                 />
@@ -245,46 +343,87 @@ const Products = () => {
                                                 </div>
                                             ))}
                                         </div>
+                                        {errors.images && <p className="text-red-500 text-sm mt-1">{errors.images}</p>}
                                     </div>
                                     <div className="col-span-2">
                                         <label className="block text-sm font-medium text-gray-700 mb-2">Product Name</label>
-                                        <input type="text" className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-black/5" placeholder="e.g. Premium Headphones" />
+                                        <input
+                                            type="text"
+                                            value={formData.productName}
+                                            onChange={(e) => setFormData({ ...formData, productName: e.target.value })}
+                                            className={`w-full px-4 py-2 rounded-lg border ${errors.productName ? 'border-red-300' : 'border-gray-200'} focus:outline-none focus:ring-2 focus:ring-black/5`}
+                                            placeholder="e.g. Premium Headphones"
+                                        />
+                                        {errors.productName && <p className="text-red-500 text-sm mt-1">{errors.productName}</p>}
                                     </div>
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 mb-2">Price</label>
                                         <div className="relative">
                                             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">$</span>
-                                            <input type="number" className="w-full pl-8 pr-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-black/5" placeholder="0.00" />
+                                            <input
+                                                type="number"
+                                                step="0.01"
+                                                value={formData.price}
+                                                onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+                                                className={`w-full pl-8 pr-4 py-2 rounded-lg border ${errors.price ? 'border-red-300' : 'border-gray-200'} focus:outline-none focus:ring-2 focus:ring-black/5`}
+                                                placeholder="0.00"
+                                            />
                                         </div>
+                                        {errors.price && <p className="text-red-500 text-sm mt-1">{errors.price}</p>}
                                     </div>
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 mb-2">Stock</label>
-                                        <input type="number" className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-black/5" placeholder="0" />
+                                        <input
+                                            type="number"
+                                            value={formData.stock}
+                                            onChange={(e) => setFormData({ ...formData, stock: e.target.value })}
+                                            className={`w-full px-4 py-2 rounded-lg border ${errors.stock ? 'border-red-300' : 'border-gray-200'} focus:outline-none focus:ring-2 focus:ring-black/5`}
+                                            placeholder="0"
+                                        />
+                                        {errors.stock && <p className="text-red-500 text-sm mt-1">{errors.stock}</p>}
                                     </div>
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 mb-2">Category</label>
-                                        <select className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-black/5">
+                                        <select
+                                            value={formData.category}
+                                            onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                                            className={`w-full px-4 py-2 rounded-lg border ${errors.category ? 'border-red-300' : 'border-gray-200'} focus:outline-none focus:ring-2 focus:ring-black/5`}
+                                        >
                                             <option value="">Select Category</option>
                                             <option value="electronics">Electronics</option>
                                             <option value="clothing">Clothing</option>
-                                            <option value="accesssories">Accessories</option>
+                                            <option value="accessories">Accessories</option>
                                         </select>
+                                        {errors.category && <p className="text-red-500 text-sm mt-1">{errors.category}</p>}
                                     </div>
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
-                                        <select className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-black/5">
+                                        <select
+                                            value={formData.isActive ? 'active' : 'draft'}
+                                            onChange={(e) => setFormData({ ...formData, isActive: e.target.value === 'active' })}
+                                            className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-black/5"
+                                        >
                                             <option value="active">Active</option>
-                                            <option value="draft">Draft</option>
+                                            <option value="draft">UnActive</option>
                                         </select>
                                     </div>
                                     <div className="col-span-2">
                                         <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
-                                        <textarea rows={4} className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-black/5" placeholder="Product description..." />
+                                        <textarea
+                                            rows={4}
+                                            value={formData.description}
+                                            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                                            className={`w-full px-4 py-2 rounded-lg border ${errors.description ? 'border-red-300' : 'border-gray-200'} focus:outline-none focus:ring-2 focus:ring-black/5`}
+                                            placeholder="Product description..."
+                                        />
+                                        {errors.description && <p className="text-red-500 text-sm mt-1">{errors.description}</p>}
                                     </div>
                                 </div>
                                 <div className="flex justify-end gap-3 pt-4">
-                                    <button type="button" onClick={() => setIsAddModalOpen(false)} className="px-6 py-2 border border-gray-200 rounded-lg text-gray-600 hover:bg-gray-50">Cancel</button>
-                                    <button type="submit" className="px-6 py-2 bg-black text-white rounded-lg hover:bg-gray-800">Add Product</button>
+                                    <button type="button" onClick={() => setIsAddModalOpen(false)} className="px-6 py-2 border border-gray-200 rounded-lg text-gray-600 hover:bg-gray-50" disabled={loading}>Cancel</button>
+                                    <button type="submit" className="px-6 py-2 bg-black text-white rounded-lg hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed" disabled={loading}>
+                                        {loading ? 'Adding...' : 'Add Product'}
+                                    </button>
                                 </div>
                             </form>
                         </motion.div>

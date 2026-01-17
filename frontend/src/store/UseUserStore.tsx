@@ -42,7 +42,7 @@ export const userAuthStore = create<AuthStore>((set, get) => ({
         try {
             const res = await axios.post('/api/auth/login', { email, password })
             console.log(res);
-            
+
             set({ user: res?.data, isLoading: false })
             toast.success("Login successful")
             return res.data
@@ -79,7 +79,7 @@ export const userAuthStore = create<AuthStore>((set, get) => ({
             set({ checkingAuth: true })
 
 
-            const res = await axios.get('/api/auth/refresh-token')
+            const res = await axios.post('/api/auth/refresh-token')
             set({ checkingAuth: false })
         } catch (error) {
             set({ checkingAuth: false })
