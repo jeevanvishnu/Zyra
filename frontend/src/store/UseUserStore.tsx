@@ -80,7 +80,8 @@ export const userAuthStore = create<AuthStore>((set, get) => ({
 
 
             const res = await axios.post('/api/auth/refresh-token')
-            set({ checkingAuth: false })
+            set({accessToken: res.data.accessToken, checkingAuth: false })
+            return res.data
         } catch (error) {
             set({ checkingAuth: false })
             toast.error(error?.response?.data?.message || 'An error occurred')
@@ -90,35 +91,32 @@ export const userAuthStore = create<AuthStore>((set, get) => ({
 }))
 
 
-// Axios interceptor for token refresh
-let refreshPromise = null;
+let refreshPromise: Promise<void> | null = null;
 
 axios.interceptors.response.use(
-    (response) => response,
-    async (error) => {
+    res => res,
+    async error => {
         const originalRequest = error.config;
+
         if (error.response?.status === 401 && !originalRequest._retry) {
             originalRequest._retry = true;
 
             try {
-                // If a refresh is already in progress, wait for it to complete
-                if (refreshPromise) {
-                    await refreshPromise;
-                    return axios(originalRequest);
+                if (!refreshPromise) {
+                    refreshPromise = userAuthStore.getState().refershToken();
                 }
 
-                // Start a new refresh process
-                refreshPromise = userAuthStore.getState().refershToken()
                 await refreshPromise;
                 refreshPromise = null;
 
                 return axios(originalRequest);
-            } catch (refreshError) {
-                // If refresh fails, redirect to login or handle as needed
+            } catch (err) {
+                refreshPromise = null;
                 userAuthStore.getState().logout();
-                return Promise.reject(refreshError);
+                return Promise.reject(err);
             }
         }
+
         return Promise.reject(error);
     }
 );
