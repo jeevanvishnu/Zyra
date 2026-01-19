@@ -9,7 +9,7 @@ import cloudinary from "../../lib/cloudinary.ts";
 export const getAllProducts = async (req: Request, res: Response) => {
   try {
     const products = await Products.find({});
-    console.log(products,"...ba")
+   
     res.json(products);
   } catch (error) {
     log("Error coming from getAllProduct ", error.message);
