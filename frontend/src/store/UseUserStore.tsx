@@ -11,10 +11,10 @@ interface AuthStore {
     signup: (data: SignupPayload) => Promise<void>;
     login: (data: LoginPayload) => Promise<void>;
     logout: (data: LogoutPlayoad) => Promise<void>
-    refershToken: (data: string) => Promise<void>
+    refreshToken: () => Promise<void>
 }
 
-export const userAuthStore = create<AuthStore>((set, get) => ({
+export const userAuthStore = create<AuthStore>((set) => ({
     user: null,
     isLoading: false,
     checkingAuth: false,
@@ -59,7 +59,7 @@ export const userAuthStore = create<AuthStore>((set, get) => ({
             const res = await axios.get('/api/auth/profile')
             set({ user: res.data, checkingAuth: false })
         } catch (err) {
-            set({ checkingAuth: true, user: null })
+            set({ checkingAuth: false, user: null })
             toast.error(err?.response?.data?.message || 'An error occurred')
         }
     },
@@ -73,17 +73,15 @@ export const userAuthStore = create<AuthStore>((set, get) => ({
             toast.error(error?.response?.data?.message || "An error occurred")
         }
     },
-    refershToken: async () => {
+    refreshToken: async () => {
         try {
-            if (get().checkingAuth) return
             set({ checkingAuth: true })
 
-
             const res = await axios.post('/api/auth/refresh-token')
-            set({accessToken: res.data.accessToken, checkingAuth: false })
+            set({ checkingAuth: false })
             return res.data
         } catch (error) {
-            set({ checkingAuth: false })
+            set({ checkingAuth: false, user: null })
             toast.error(error?.response?.data?.message || 'An error occurred')
         }
     },
@@ -103,7 +101,7 @@ axios.interceptors.response.use(
 
             try {
                 if (!refreshPromise) {
-                    refreshPromise = userAuthStore.getState().refershToken();
+                    refreshPromise = userAuthStore.getState().refreshToken();
                 }
 
                 await refreshPromise;
