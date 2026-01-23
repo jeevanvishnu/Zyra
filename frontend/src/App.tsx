@@ -3,6 +3,7 @@ import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
+import ProductsPage from './users/pages/Products';
 import Home from './users/pages/Home';
 import LoginPage from './users/pages/LoginPage';
 import SignupPage from './users/pages/SignupPage';
@@ -46,6 +47,7 @@ const App = () => {
         <Routes>
           {/* User Routes */}
           <Route path='/' element={<Home />} />
+          <Route path='/products' element={<ProductsPage />} />
           <Route path='/login' element={!user ? <LoginPage /> : <Navigate to={'/'} />} />
           <Route path='/signup' element={!user ? <SignupPage /> : <Navigate to={'/'} />} />
           <Route path='/cart' element={
