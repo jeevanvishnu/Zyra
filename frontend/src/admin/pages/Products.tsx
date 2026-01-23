@@ -2,18 +2,23 @@ import { Plus, Search, Filter, Edit, Trash2, X, Upload, ChevronLeft, ChevronRigh
 import { motion, AnimatePresence } from "framer-motion";
 import { useEffect, useState } from "react";
 import { useProductStore } from "@/store/useProductStore";
-
+import AlertDialogDestructive from "@/components/ui/DeleteDialogaction";
 const Products = () => {
-    const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isEditing, setIsEditing] = useState(false);
+    const [editId, setEditId] = useState<string | null>(null);
+
+    // Pagination from store might be better, but for now let's keep local state driving the store fetch
+    // Actually, store has currentPage. Let's sync or just drive from URL/local state.
+    // Simple approach: Use local state for page, call store.getAllProducts(page).
     const [currentPage, setCurrentPage] = useState(1);
 
-    const { products, addProduct, getAllProducts, loading } = useProductStore();
+    const { products, addProduct, editProduct, getAllProducts, loading, totalPages } = useProductStore();
 
     useEffect(() => {
-        getAllProducts()
-    }, [])
+        getAllProducts(currentPage);
+    }, [getAllProducts, currentPage]);
 
-    const itemsPerPage = 5;
 
     // Form state
     const [formData, setFormData] = useState({
@@ -83,7 +88,8 @@ const Products = () => {
             newErrors.description = 'Description is required';
         }
 
-        const hasImages = imageFiles.some(file => file !== null);
+
+        const hasImages = imagePreviews.some(preview => preview !== null);
         if (!hasImages) {
             newErrors.images = 'At least one image is required';
         }
@@ -104,15 +110,42 @@ const Products = () => {
         setImageFiles([null, null, null]);
         setImagePreviews([null, null, null]);
         setErrors({});
+        setIsEditing(false);
+        setEditId(null);
     };
 
-    // Pagination logic
-    const indexOfLastItem = currentPage * itemsPerPage;
-    const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-    const currentItems = products.slice(indexOfFirstItem, indexOfLastItem);
-    const totalPages = Math.ceil(products.length / itemsPerPage);
+    const openAddModal = () => {
+        resetForm();
+        setIsModalOpen(true);
+        setIsEditing(false);
+    }
 
-    const handleAddProduct = async (e: React.FormEvent) => {
+    const openEditModal = (product: any) => {
+        resetForm();
+        setFormData({
+            productName: product.ProductName,
+            price: product.price.toString(),
+            stock: product.stock.toString(),
+            category: product.category,
+            description: product.description,
+            isActive: product.isActive
+        });
+
+        // Populate existing images as previews
+        const newPreviews = [null, null, null];
+        if (product.images && Array.isArray(product.images)) {
+            product.images.forEach((url: string, idx: number) => {
+                if (idx < 3) newPreviews[idx] = url;
+            });
+        }
+        setImagePreviews(newPreviews);
+
+        setEditId(product._id);
+        setIsEditing(true);
+        setIsModalOpen(true);
+    }
+
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
         // Validate form
@@ -129,20 +162,30 @@ const Products = () => {
         data.append('description', formData.description);
         data.append('isActive', String(formData.isActive));
 
-        // Append all image files with the same field name 'image'
+        // Append all NEW image files
         imageFiles.forEach((file) => {
             if (file) {
                 data.append('image', file);
             }
         });
 
+        // Append existing images that should be kept
+        imagePreviews.forEach((preview, index) => {
+            if (preview && typeof preview === 'string' && !preview.startsWith('data:') && !imageFiles[index]) {
+                data.append('existingImages', preview);
+            }
+        });
+
         try {
-            await addProduct(data);
-            setIsAddModalOpen(false);
+            if (isEditing && editId) {
+                await editProduct(editId as string, data);
+            } else {
+                await addProduct(data);
+            }
+            setIsModalOpen(false);
             resetForm();
         } catch (error) {
-            // Error is handled in the store
-            console.error('Failed to add product:', error);
+            console.error('Failed to submit product:', error);
         }
     };
 
@@ -153,7 +196,7 @@ const Products = () => {
                 <motion.button
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
-                    onClick={() => setIsAddModalOpen(true)}
+                    onClick={openAddModal}
                     className="bg-black text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-gray-800 transition-colors"
                 >
                     <Plus size={20} />
@@ -212,24 +255,23 @@ const Products = () => {
                                         </div>
                                     </td>
                                     <td className="p-4 text-gray-600">{item.category}</td>
-                                    <td className="p-4 font-medium">${item?.price?.toFixed(2)}</td>
+                                    <td className="p-4 font-medium"> &#8377; {item?.price?.toFixed(2)}</td>
                                     <td className="p-4 text-gray-600">{item.stock} in stock</td>
                                     <td className="p-4">
                                         <span className={`px-2 py-1 rounded-full text-xs font-medium ${item.isActive === true
                                             ? 'bg-green-100 text-green-700'
                                             : 'bg-gray-100 text-gray-700'
                                             }`}>{item?.isActive === true ? "Active" : "UnActive"}
-                                            {item?.isActive}
                                         </span>
                                     </td>
                                     <td className="p-4">
                                         <div className="flex items-center gap-2">
-                                            <button className="p-2 hover:bg-gray-100 rounded-lg text-gray-600 transition-colors">
+                                            <button
+                                                onClick={() => openEditModal(item)}
+                                                className="p-2 hover:bg-gray-100 rounded-lg text-gray-600 transition-colors">
                                                 <Edit size={18} />
                                             </button>
-                                            <button className="p-2 hover:bg-red-50 rounded-lg text-red-500 transition-colors">
-                                                <Trash2 size={18} />
-                                            </button>
+                                            <AlertDialogDestructive onConfirm={() => useProductStore.getState().deleteProduct(item._id!)} />
                                         </div>
                                     </td>
                                 </tr>
@@ -241,7 +283,7 @@ const Products = () => {
                 {/* Pagination */}
                 <div className="p-4 border-t border-gray-100 flex items-center justify-between text-sm text-gray-600">
                     <div>
-                        Showing {indexOfFirstItem + 1} to {Math.min(indexOfLastItem, products.length)} of {products.length} entries
+                        Page {currentPage} of {totalPages}
                     </div>
                     <div className="flex items-center gap-2">
                         <button
@@ -274,15 +316,15 @@ const Products = () => {
                 </div>
             </div>
 
-            {/* Add Product Modal */}
+            {/* Add/Edit Product Modal */}
             <AnimatePresence>
-                {isAddModalOpen && (
+                {isModalOpen && (
                     <>
                         <motion.div
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
-                            onClick={() => setIsAddModalOpen(false)}
+                            onClick={() => setIsModalOpen(false)}
                             className="fixed inset-0 bg-black/20 backdrop-blur-sm z-50"
                         />
                         <motion.div
@@ -292,12 +334,12 @@ const Products = () => {
                             className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-2xl bg-white rounded-xl shadow-xl z-50 overflow-hidden"
                         >
                             <div className="p-6 border-b border-gray-100 flex justify-between items-center">
-                                <h3 className="text-xl font-bold text-gray-900">Add New Product</h3>
-                                <button onClick={() => setIsAddModalOpen(false)} className="p-2 hover:bg-gray-100 rounded-full text-gray-500">
+                                <h3 className="text-xl font-bold text-gray-900">{isEditing ? 'Edit Product' : 'Add New Product'}</h3>
+                                <button onClick={() => setIsModalOpen(false)} className="p-2 hover:bg-gray-100 rounded-full text-gray-500">
                                     <X size={20} />
                                 </button>
                             </div>
-                            <form onSubmit={handleAddProduct} className="p-6 space-y-6 max-h-[80vh] overflow-y-auto">
+                            <form onSubmit={handleSubmit} className="p-6 space-y-6 max-h-[80vh] overflow-y-auto">
                                 <div className="grid grid-cols-2 gap-6">
                                     <div className="col-span-2">
                                         <label className="block text-sm font-medium text-gray-700 mb-2">Product Images (Up to 3)</label>
@@ -420,9 +462,9 @@ const Products = () => {
                                     </div>
                                 </div>
                                 <div className="flex justify-end gap-3 pt-4">
-                                    <button type="button" onClick={() => setIsAddModalOpen(false)} className="px-6 py-2 border border-gray-200 rounded-lg text-gray-600 hover:bg-gray-50" disabled={loading}>Cancel</button>
+                                    <button type="button" onClick={() => setIsModalOpen(false)} className="px-6 py-2 border border-gray-200 rounded-lg text-gray-600 hover:bg-gray-50" disabled={loading}>Cancel</button>
                                     <button type="submit" className="px-6 py-2 bg-black text-white rounded-lg hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed" disabled={loading}>
-                                        {loading ? 'Adding...' : 'Add Product'}
+                                        {loading ? (isEditing ? 'Updating...' : 'Adding...') : (isEditing ? 'Update Product' : 'Add Product')}
                                     </button>
                                 </div>
                             </form>

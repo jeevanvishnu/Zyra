@@ -1,5 +1,4 @@
 import { ShoppingCart, Star } from 'lucide-react';
-
 interface Product {
     id: string;
     name: string;
