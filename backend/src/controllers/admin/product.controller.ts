@@ -28,8 +28,6 @@ export const getAllProducts = async (req: Request, res: Response) => {
   }
 };
 
-
-
 export const addProducts = async (req: Request, res: Response) => {
   try {
     const { productName, price, stock, isActive, category, description } =
@@ -160,8 +158,6 @@ export const updateProduct = async (req: Request, res: Response) => {
     res.status(500).json({ message: "Update Product failed" });
   }
 };
-
-
 
 export const deleteProduct = async (req:Request , res:Response) =>{
   try {
