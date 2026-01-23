@@ -3,7 +3,7 @@ import type {Request , Response} from "express"
 
 export const getFeatureProduct = async (req:Request , res:Response) =>{
     try {
-        const product = await Products.find({isActive:true}).sort({CreatedAt:-1})
+        const product = await Products.find({isActive:true}).sort({createdAt:-1})
         if(product.length === 0){
             return res.status(404).json({message:"Product Not Found"})
         }
