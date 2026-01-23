@@ -2,15 +2,26 @@ import { create } from "zustand"
 import toast from "react-hot-toast"
 import axios from '../lib/axios'
 
-
+interface Product {
+    _id?: string;
+    ProductName: string;
+    images: string[];
+    price: number;
+    stock: number;
+    description: string;
+    category: string;
+    isActive: boolean;
+}
 interface AuthStore {
     user: any,
     isLoading: boolean;
     checkingAuth: boolean,
+    products: Product[],
     checkAuth: () => Promise<void>
     signup: (data: SignupPayload) => Promise<void>;
     login: (data: LoginPayload) => Promise<void>;
     logout: (data: LogoutPlayoad) => Promise<void>
+    fetchProducts: () => Promise<void>
     refreshToken: () => Promise<void>
 }
 
@@ -18,6 +29,7 @@ export const userAuthStore = create<AuthStore>((set) => ({
     user: null,
     isLoading: false,
     checkingAuth: false,
+    products: [],
 
     signup: async ({ name, email, password, confirmPassword }) => {
         set({ isLoading: true })
@@ -73,6 +85,17 @@ export const userAuthStore = create<AuthStore>((set) => ({
             toast.error(error?.response?.data?.message || "An error occurred")
         }
     },
+
+    fetchProducts: async () => {
+        try {
+            const res = await axios.get('/api')
+            set({ products: res?.data })
+            return res.data
+        } catch (error) {
+            toast.error(error?.response?.data?.message || "An error occurred")
+        }
+    },
+
     refreshToken: async () => {
         try {
             set({ checkingAuth: true })

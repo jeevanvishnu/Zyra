@@ -1,11 +1,11 @@
-import { ShoppingCart, Star } from 'lucide-react';
+import { ShoppingCart } from 'lucide-react';
 interface Product {
-    id: string;
-    name: string;
+    _id?: string;
+    ProductName: string;
     price: number;
     description: string;
-    image: string;
-    rating: number;
+    images: string[];
+    rating?: number;
 }
 
 interface ProductCardProps {
@@ -18,8 +18,8 @@ export default function ProductCard({ product }: ProductCardProps) {
             {/* Image Container */}
             <div className="relative aspect-square overflow-hidden bg-secondary/50">
                 <img
-                    src={product.image}
-                    alt={product.name}
+                    src={product?.images?.[0]}
+                    alt={product?.ProductName}
                     className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-500"
                 />
 
@@ -34,33 +34,17 @@ export default function ProductCard({ product }: ProductCardProps) {
                 {/* Title and Price */}
                 <div className="flex justify-between items-start gap-2">
                     <h3 className="font-bold text-lg truncate group-hover:text-gray-700 dark:group-hover:text-gray-300 transition-colors">
-                        {product.name}
+                        {product?.ProductName}
                     </h3>
                     <span className="font-bold text-lg">
-                        ${product.price.toFixed(2)}
+                        ${product?.price?.toFixed(2)}
                     </span>
                 </div>
 
                 {/* Description */}
                 <p className="text-sm text-muted-foreground line-clamp-2">
-                    {product.description}
+                    {product?.description}
                 </p>
-
-                {/* Rating */}
-                <div className="flex items-center gap-1">
-                    {[...Array(5)].map((_, i) => (
-                        <Star
-                            key={i}
-                            className={`w-4 h-4 ${i < Math.floor(product.rating)
-                                    ? 'text-yellow-400 fill-yellow-400'
-                                    : 'text-gray-300 dark:text-gray-600'
-                                }`}
-                        />
-                    ))}
-                    <span className="text-xs text-muted-foreground ml-1">
-                        ({product.rating.toFixed(1)})
-                    </span>
-                </div>
 
                 {/* Add to Cart Button (Mobile/Fallback) */}
                 <button className="w-full mt-2 sm:hidden py-2 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 rounded-lg font-medium">

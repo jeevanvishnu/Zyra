@@ -1,10 +1,10 @@
 import { Products } from "../../model/productmodel.ts"
-import {Request , Response} from "express"
+import type {Request , Response} from "express"
 
 export const getFeatureProduct = async (req:Request , res:Response) =>{
     try {
-        const product = await Products.find()
-        if(!product){
+        const product = await Products.find({isActive:true}).sort({CreatedAt:-1})
+        if(product.length === 0){
             return res.status(404).json({message:"Product Not Found"})
         }
         res.json(product)

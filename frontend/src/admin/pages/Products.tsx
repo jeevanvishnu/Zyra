@@ -261,7 +261,7 @@ const Products = () => {
                                         <span className={`px-2 py-1 rounded-full text-xs font-medium ${item.isActive === true
                                             ? 'bg-green-100 text-green-700'
                                             : 'bg-gray-100 text-gray-700'
-                                            }`}>{item?.isActive === true ? "Active" : "UnActive"}
+                                            }`}>{item?.isActive === true ? "Active" : "Inactive"}
                                         </span>
                                     </td>
                                     <td className="p-4">
@@ -446,7 +446,7 @@ const Products = () => {
                                             className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-black/5"
                                         >
                                             <option value="active">Active</option>
-                                            <option value="draft">UnActive</option>
+                                            <option value="draft">Inactive</option>
                                         </select>
                                     </div>
                                     <div className="col-span-2">
