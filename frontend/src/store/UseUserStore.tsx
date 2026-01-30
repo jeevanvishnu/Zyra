@@ -17,11 +17,21 @@ interface AuthStore {
     isLoading: boolean;
     checkingAuth: boolean,
     products: Product[],
+    pagination: {
+        currentPage: number;
+        totalPages: number;
+        totalProducts: number;
+    },
+    currentProduct: Product | null,
+    cart: (Product & { quantity: number })[],
     checkAuth: () => Promise<void>
     signup: (data: SignupPayload) => Promise<void>;
     login: (data: LoginPayload) => Promise<void>;
     logout: (data: LogoutPlayoad) => Promise<void>
     fetchProducts: () => Promise<void>
+    getAllProduct: (params?: { category?: string; minPrice?: string; maxPrice?: string; search?: string; sort?: string; page?: number; limit?: number }) => Promise<void>
+    getProductById: (id: string) => Promise<void>
+    addToCart: (product: Product) => void
     refreshToken: () => Promise<void>
 }
 
@@ -30,6 +40,13 @@ export const userAuthStore = create<AuthStore>((set) => ({
     isLoading: false,
     checkingAuth: false,
     products: [],
+    pagination: {
+        currentPage: 1,
+        totalPages: 1,
+        totalProducts: 0
+    },
+    currentProduct: null,
+    cart: [],
 
     signup: async ({ name, email, password, confirmPassword }) => {
         set({ isLoading: true })
@@ -42,9 +59,9 @@ export const userAuthStore = create<AuthStore>((set) => ({
             const res = await axios.post('/api/auth/signup', { name, email, password })
             set({ user: res.data, isLoading: false })
             toast.success("Signup successful")
-        } catch (error) {
+        } catch (error: any) {
             set({ isLoading: false })
-            toast.error(error?.response?.data?.message )
+            toast.error(error?.response?.data?.message)
         }
     },
 
@@ -58,9 +75,9 @@ export const userAuthStore = create<AuthStore>((set) => ({
             set({ user: res?.data, isLoading: false })
             toast.success("Login successful")
             return res.data
-        } catch (error) {
+        } catch (error: any) {
             set({ isLoading: false })
-            toast.error(error?.response?.data?.message )
+            toast.error(error?.response?.data?.message)
         }
     },
 
@@ -70,7 +87,7 @@ export const userAuthStore = create<AuthStore>((set) => ({
         try {
             const res = await axios.get('/api/auth/profile')
             set({ user: res.data, checkingAuth: false })
-        } catch (err) {
+        } catch (err: any) {
             set({ checkingAuth: false, user: null })
             toast.error(err?.response?.data?.message || 'An error occurred')
         }
@@ -81,7 +98,7 @@ export const userAuthStore = create<AuthStore>((set) => ({
             await axios.post('/api/auth/logout')
             set({ user: null })
             toast.success("Logout sucessfull")
-        } catch (error) {
+        } catch (error: any) {
             toast.error(error?.response?.data?.message || "An error occurred")
         }
     },
@@ -91,7 +108,35 @@ export const userAuthStore = create<AuthStore>((set) => ({
             const res = await axios.get('/api')
             set({ products: res?.data })
             return res.data
-        } catch (error) {
+        } catch (error: any) {
+            toast.error(error?.response?.data?.message || "An error occurred")
+        }
+    },
+    getAllProduct: async (params = {}) => {
+        try {
+            const { category, minPrice, maxPrice, search, sort, page = 1, limit = 10 } = params;
+
+            // Filter out empty or "All" values
+            const queryParams = new URLSearchParams();
+            if (category && category !== "All") queryParams.append("category", category);
+            if (minPrice) queryParams.append("minPrice", minPrice);
+            if (maxPrice) queryParams.append("maxPrice", maxPrice);
+            if (search) queryParams.append("search", search);
+            if (sort) queryParams.append("sort", sort);
+            queryParams.append("page", page.toString());
+            queryParams.append("limit", limit.toString());
+
+            const res = await axios.get(`/api/all?${queryParams.toString()}`)
+            set({
+                products: res?.data?.products || [],
+                pagination: {
+                    currentPage: res?.data?.currentPage || 1,
+                    totalPages: res?.data?.totalPages || 1,
+                    totalProducts: res?.data?.totalProducts || 0
+                }
+            })
+            return res.data
+        } catch (error: any) {
             toast.error(error?.response?.data?.message || "An error occurred")
         }
     },
@@ -103,10 +148,37 @@ export const userAuthStore = create<AuthStore>((set) => ({
             const res = await axios.post('/api/auth/refresh-token')
             set({ checkingAuth: false })
             return res.data
-        } catch (error) {
+        } catch (error: any) {
             set({ checkingAuth: false, user: null })
             toast.error(error?.response?.data?.message || 'An error occurred')
         }
+    },
+
+    getProductById: async (id) => {
+        set({ isLoading: true })
+        try {
+            const res = await axios.get(`/api/${id}`)
+            set({ currentProduct: res.data, isLoading: false })
+        } catch (error: any) {
+            set({ isLoading: false, currentProduct: null })
+            toast.error(error?.response?.data?.message || "Failed to fetch product details")
+        }
+    },
+
+    addToCart: (product) => {
+        set((state) => {
+            const existingItem = state.cart.find((item) => item._id === product._id);
+            if (existingItem) {
+                toast.success(`Updated ${product.ProductName} quantity in cart`);
+                return {
+                    cart: state.cart.map((item) =>
+                        item._id === product._id ? { ...item, quantity: item.quantity + 1 } : item
+                    ),
+                };
+            }
+            toast.success(`Added ${product.ProductName} to cart`);
+            return { cart: [...state.cart, { ...product, quantity: 1 }] };
+        });
     },
 
 

@@ -1,7 +1,9 @@
 import express from "express"
-import { getFeatureProduct } from "../../controllers/user/product.controller.ts"
+import { getFeatureProduct, allProducts, getProductById } from "../../controllers/user/product.controller.ts"
 const router = express.Router()
 
-router.get('/',getFeatureProduct)
+router.get('/', getFeatureProduct)
+router.get('/all', allProducts)
+router.get('/:id', getProductById)
 
 export default router

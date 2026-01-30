@@ -4,41 +4,7 @@ import { Link } from 'react-router-dom';
 import ProductCard from '../../components/ProductCard';
 import { userAuthStore } from '@/store/UseUserStore';
 
-// Mock Data
-// const PRODUCTS = [
-//     {
-//         id: '1',
-//         name: "Classic Monochrome Tee",
-//         price: 35.00,
-//         description: "Premium cotton t-shirt in our signature black and white style. Perfect for everyday wear.",
-//         image: "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?q=80&w=800&auto=format&fit=crop",
-//         rating: 4.5
-//     },
-//     {
-//         id: '2',
-//         name: "Urban Cargo Jacket",
-//         price: 120.00,
-//         description: "Multi-pocket cargo jacket designed for functionality and modern urban aesthetics.",
-//         image: "https://images.unsplash.com/photo-1551028919-ac7675cf5063?q=80&w=800&auto=format&fit=crop",
-//         rating: 4.8
-//     },
-//     {
-//         id: '3',
-//         name: "Minimalist Sneakers",
-//         price: 89.99,
-//         description: "Clean lines and superior comfort. The essential white sneaker for your rotation.",
-//         image: "https://images.unsplash.com/photo-1549298916-b41d501d3772?q=80&w=800&auto=format&fit=crop",
-//         rating: 4.2
-//     },
-//     {
-//         id: '4',
-//         name: "Tech Fleece Hoodie",
-//         price: 75.00,
-//         description: "Advanced fleece material providing warmth without the bulk. Athletic cut.",
-//         image: "https://images.unsplash.com/photo-1556905055-8f358a7a47b2?q=80&w=800&auto=format&fit=crop",
-//         rating: 4.6
-//     }
-// ];
+
 
 export default function Home() {
     const { products, fetchProducts } = userAuthStore();

@@ -132,7 +132,7 @@ const Products = () => {
         });
 
         // Populate existing images as previews
-        const newPreviews = [null, null, null];
+        const newPreviews: (string | null)[] = [null, null, null];
         if (product.images && Array.isArray(product.images)) {
             product.images.forEach((url: string, idx: number) => {
                 if (idx < 3) newPreviews[idx] = url;
@@ -401,7 +401,7 @@ const Products = () => {
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 mb-2">Price</label>
                                         <div className="relative">
-                                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">$</span>
+                                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">₹</span>
                                             <input
                                                 type="number"
                                                 step="0.01"

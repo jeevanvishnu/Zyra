@@ -80,7 +80,7 @@ const Orders = () => {
                                         </div>
                                     </td>
                                     <td className="p-4 text-gray-500">{item.date}</td>
-                                    <td className="p-4 font-medium">${item.total.toFixed(2)}</td>
+                                    <td className="p-4 font-medium">₹{item.total.toLocaleString('en-IN')}</td>
                                     <td className="p-4">
                                         <select
                                             value={item.status}
@@ -121,8 +121,8 @@ const Orders = () => {
                                 key={page}
                                 onClick={() => setCurrentPage(page)}
                                 className={`w-8 h-8 rounded-lg flex items-center justify-center ${currentPage === page
-                                        ? 'bg-black text-white'
-                                        : 'border border-gray-200 hover:bg-gray-50'
+                                    ? 'bg-black text-white'
+                                    : 'border border-gray-200 hover:bg-gray-50'
                                     }`}
                             >
                                 {page}

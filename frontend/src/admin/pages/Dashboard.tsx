@@ -73,7 +73,7 @@ const Dashboard = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 <StatCard
                     title="Total Sales"
-                    value="$124,592"
+                    value="₹1,24,592"
                     icon={DollarSign}
                     trend="+12.5%"
                     color="bg-black"

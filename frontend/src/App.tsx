@@ -13,19 +13,19 @@ import Dashboard from './admin/pages/Dashboard';
 import Products from './admin/pages/Products';
 import Orders from './admin/pages/Orders';
 import Banners from './admin/pages/Banners';
+import ProductDetails from './users/pages/ProductDetails';
 import { userAuthStore } from '@/store/UseUserStore';
 
 const App = () => {
   // Example state for cart and wishlist counts
-  const [cartCount] = useState(3);
+  const { user, checkAuth, cart } = userAuthStore();
+  const cartCount = cart.reduce((acc, item) => acc + item.quantity, 0);
   const [wishlistCount] = useState(5);
 
   const handleSearch = (query: string) => {
     console.log('Searching for:', query);
     // Implement your search logic here
   };
-
-  const { user, checkAuth } = userAuthStore();
   const location = useLocation();
   const isAdminRoute = location.pathname.startsWith('/admin');
 
@@ -48,6 +48,7 @@ const App = () => {
           {/* User Routes */}
           <Route path='/' element={<Home />} />
           <Route path='/products' element={<ProductsPage />} />
+          <Route path='/product/:id' element={<ProductDetails />} />
           <Route path='/login' element={!user ? <LoginPage /> : <Navigate to={'/'} />} />
           <Route path='/signup' element={!user ? <SignupPage /> : <Navigate to={'/'} />} />
           <Route path='/cart' element={
