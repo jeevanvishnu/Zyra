@@ -44,7 +44,7 @@ export const userAuthStore = create<AuthStore>((set) => ({
             toast.success("Signup successful")
         } catch (error) {
             set({ isLoading: false })
-            toast.error(error?.response?.data?.message || 'An error occurred')
+            toast.error(error?.response?.data?.message )
         }
     },
 
@@ -60,7 +60,7 @@ export const userAuthStore = create<AuthStore>((set) => ({
             return res.data
         } catch (error) {
             set({ isLoading: false })
-            toast.error(error?.response?.data?.message || 'An error occurred')
+            toast.error(error?.response?.data?.message )
         }
     },
 
