@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Search, ShoppingCart, Heart, User, Menu, X } from 'lucide-react';
+import { Search, ShoppingCart, Heart, User, Menu, X, LogOut } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { userAuthStore } from '@/store/UseUserStore';
 
@@ -16,6 +16,7 @@ export default function Navbar({
 }: NavbarProps) {
     const [searchQuery, setSearchQuery] = useState('');
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+    const [isProfileOpen, setIsProfileOpen] = useState(false);
 
     const handleSearchSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -24,8 +25,8 @@ export default function Navbar({
         }
     };
 
-    const { user , logout } = userAuthStore()
-    
+    const { user, logout } = userAuthStore()
+
 
     return (
         <nav className="sticky top-0 z-50 w-full bg-white/80 dark:bg-card/80 backdrop-blur-lg border-b border-border shadow-sm">
@@ -90,13 +91,40 @@ export default function Navbar({
                         {/* User Profile - Desktop */}
                         {user ? (
                             <>
-                            <button  onClick={logout}>Logout</button>
-                            <div  className="hidden sm:flex items-center gap-2 pl-2 pr-4 py-1.5 bg-secondary/50 border border-border rounded-full hover:bg-secondary transition-colors duration-300">
-                                <div className="p-1.5 bg-gradient-to-r from-gray-900 to-gray-700 dark:from-gray-100 dark:to-gray-300 rounded-full text-white dark:text-gray-900">
-                                    <User className="w-4 h-4" />
+                                <div className="relative">
+                                    <button
+                                        onClick={() => setIsProfileOpen(!isProfileOpen)}
+                                        className="hidden sm:flex items-center gap-2 pl-2 pr-4 py-1.5 bg-secondary/50 border border-border rounded-full hover:bg-secondary transition-colors duration-300"
+                                    >
+                                        <div className="p-1.5 bg-gradient-to-r from-gray-900 to-gray-700 dark:from-gray-100 dark:to-gray-300 rounded-full text-white dark:text-gray-900">
+                                            <User className="w-4 h-4" />
+                                        </div>
+                                        <span className="font-semibold text-sm max-w-[100px] truncate">{user.name}</span>
+                                    </button>
+
+                                    {isProfileOpen && (
+                                        <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-card border border-border rounded-xl shadow-lg py-2 animate-in fade-in zoom-in-95 duration-200">
+                                            <Link
+                                                to="/account"
+                                                className="flex items-center gap-3 px-4 py-2 text-sm hover:bg-secondary transition-colors"
+                                                onClick={() => setIsProfileOpen(false)}
+                                            >
+                                                <User className="w-4 h-4" />
+                                                My Account
+                                            </Link>
+                                            <button
+                                                onClick={() => {
+                                                    logout();
+                                                    setIsProfileOpen(false);
+                                                }}
+                                                className="w-full flex items-center gap-3 px-4 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                                            >
+                                                <LogOut className="w-4 h-4" />
+                                                Logout
+                                            </button>
+                                        </div>
+                                    )}
                                 </div>
-                                <span  className="font-semibold text-sm max-w-[100px] truncate">{user.name}</span>
-                            </div>
                             </>
                         ) : (
                             <Link
@@ -106,7 +134,7 @@ export default function Navbar({
                                 <User className="w-4 h-4" />
                                 <span>Login</span>
                             </Link>
-                            
+
                         )}
                         {/* Mobile Menu Button */}
                         <button

@@ -150,10 +150,10 @@ const CartPage = () => {
                                 </div>
                             </div>
 
-                            <button className="w-full py-4 bg-black dark:bg-white text-white dark:text-black rounded-2xl font-bold text-lg hover:scale-[1.02] transition-all active:scale-95 shadow-xl hover:shadow-gray-900/20 dark:hover:shadow-white/10 flex items-center justify-center gap-3 group/btn">
+                            <Link to="/checkout" className="w-full py-4 bg-black dark:bg-white text-white dark:text-black rounded-2xl font-bold text-lg hover:scale-[1.02] transition-all active:scale-95 shadow-xl hover:shadow-gray-900/20 dark:hover:shadow-white/10 flex items-center justify-center gap-3 group/btn">
                                 Proceed to Checkout
                                 <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                            </button>
+                            </Link>
 
                             <div className="mt-8 flex flex-col gap-4">
                                 <div className="flex items-center gap-3 text-sm text-muted-foreground">

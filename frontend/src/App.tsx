@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import Navbar from './components/Navbar';
+import AccountPage from './users/pages/Account';
 import Footer from './components/Footer';
 import ProductsPage from './users/pages/Products';
 import Home from './users/pages/Home';
@@ -16,6 +17,7 @@ import Banners from './admin/pages/Banners';
 import ProductDetails from './users/pages/ProductDetails';
 import CartPage from './users/pages/Cart';
 import WishlistPage from './users/pages/Wishlist';
+import CheckoutForm from './users/pages/Checkout';
 import { userAuthStore } from '@/store/UseUserStore';
 
 const App = () => {
@@ -54,6 +56,8 @@ const App = () => {
           <Route path='/login' element={!user ? <LoginPage /> : <Navigate to={'/'} />} />
           <Route path='/signup' element={!user ? <SignupPage /> : <Navigate to={'/'} />} />
           <Route path='/cart' element={<CartPage />} />
+          <Route path='/checkout' element={user && cartCount > 0 ? <CheckoutForm /> : <Navigate to='/cart' />} />
+          <Route path='/account' element={user ? <AccountPage /> : <Navigate to='/login' />} />
           <Route path='/wishlist' element={<WishlistPage />} />
 
           {/* Admin Routes */}

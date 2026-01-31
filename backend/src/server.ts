@@ -10,6 +10,8 @@ import passport from 'passport';
 import userProduct from "./routes/user/product.route.ts"
 import cartRoutes from "./routes/user/cart.route.ts"
 import wishlistRoutes from "./routes/user/wishlist.route.ts"
+import orderRoutes from "./routes/user/order.route.ts"
+import userRoutes from "./routes/user/user.route.ts"
 const app = express();
 
 app.use(express.json());
@@ -23,8 +25,10 @@ app.use(cors({
 
 app.use(passport.initialize())
 app.use('/api/auth', authRoutes)
+app.use('/api/user', userRoutes)
 app.use('/api/cart', cartRoutes)
 app.use('/api/wishlist', wishlistRoutes)
+app.use('/api/orders', orderRoutes)
 app.use('/api/products', productRoutes)
 app.use('/api', userProduct)
 

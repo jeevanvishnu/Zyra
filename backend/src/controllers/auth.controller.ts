@@ -44,7 +44,7 @@ export const login = async (req: Request, res: Response) => {
 
         setCookies(res, accessToken, refreshToken);
 
-        res.status(200).json({ _id: user._id, email: user.email, name: user.name,role:user.role, message: "Login successfully" })
+        res.status(200).json({ _id: user._id, email: user.email, name: user.name, role: user.role, message: "Login successfully" })
     } catch (error) {
         console.log("error is from login", error);
         res.status(500).json({ message: "Internal server error" })
@@ -134,6 +134,34 @@ export const getProfile = async (req: Request, res: Response) => {
 
     } catch (error) {
         return res.status(500).json({ message: "Internal server error" });
+    }
+}
+
+export const updateProfile = async (req: Request, res: Response) => {
+    try {
+        const user = await User.findById((req as any).user._id);
+
+        if (user) {
+            user.name = req.body.name || user.name;
+            user.email = req.body.email || user.email;
+
+            if (req.body.password) {
+                user.password = await bcrypt.hash(req.body.password, 10);
+            }
+
+            const updatedUser = await user.save();
+
+            res.json({
+                _id: updatedUser._id,
+                name: updatedUser.name,
+                email: updatedUser.email,
+                role: updatedUser.role,
+            });
+        } else {
+            res.status(404).json({ message: "User not found" });
+        }
+    } catch (error) {
+        res.status(500).json({ message: "Internal server error" });
     }
 }
 

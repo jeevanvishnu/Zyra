@@ -12,6 +12,28 @@ interface Product {
     category: string;
     isActive: boolean;
 }
+
+interface Address {
+    _id?: string;
+    street: string;
+    city: string;
+    state: string;
+    zipCode: string;
+    country: string;
+    phone: string;
+    isDefault: boolean;
+}
+
+interface Order {
+    _id: string;
+    items: any[];
+    totalAmount: number;
+    paymentStatus: string;
+    orderStatus: string;
+    createdAt: string;
+    paymentMethod: string;
+}
+
 interface AuthStore {
     user: any,
     isLoading: boolean;
@@ -25,6 +47,8 @@ interface AuthStore {
     currentProduct: Product | null,
     cart: (Product & { quantity: number })[],
     wishlist: Product[],
+    orders: Order[],
+    addresses: Address[],
     checkAuth: () => Promise<void>
     signup: (data: any) => Promise<void>;
     login: (data: any) => Promise<void>;
@@ -40,6 +64,11 @@ interface AuthStore {
     toggleWishlist: (productId: string) => Promise<void>
     getWishlist: () => Promise<void>
     refreshToken: () => Promise<void>
+    getOrders: () => Promise<void>
+    getAddresses: () => Promise<void>
+    addAddress: (address: Address) => Promise<void>
+    deleteAddress: (id: string) => Promise<void>
+    updateProfile: (data: { name?: string; email?: string, password?: string }) => Promise<void>
 }
 
 export const userAuthStore = create<AuthStore>((set) => ({
@@ -294,6 +323,57 @@ export const userAuthStore = create<AuthStore>((set) => ({
         }
     },
 
+
+    orders: [],
+    addresses: [],
+
+    getOrders: async () => {
+        try {
+            const res = await axios.get("/api/orders");
+            set({ orders: res.data });
+        } catch (error: any) {
+            console.error("Failed to fetch orders", error);
+        }
+    },
+
+    getAddresses: async () => {
+        try {
+            const res = await axios.get("/api/user/address");
+            set({ addresses: res.data });
+        } catch (error: any) {
+            console.error("Failed to fetch addresses", error);
+        }
+    },
+
+    addAddress: async (address) => {
+        try {
+            const res = await axios.post("/api/user/address", address);
+            set({ addresses: res.data });
+            toast.success("Address added successfully");
+        } catch (error: any) {
+            toast.error(error.response?.data?.message || "Failed to add address");
+        }
+    },
+
+    deleteAddress: async (id) => {
+        try {
+            const res = await axios.delete(`/api/user/address/${id}`);
+            set({ addresses: res.data });
+            toast.success("Address deleted");
+        } catch (error: any) {
+            toast.error(error.response?.data?.message || "Failed to delete address");
+        }
+    },
+
+    updateProfile: async (data) => {
+        try {
+            const res = await axios.put("/api/user/profile", data);
+            set({ user: { ...res.data } });
+            toast.success("Profile updated successfully");
+        } catch (error: any) {
+            toast.error(error.response?.data?.message || "Failed to update profile");
+        }
+    }
 
 }))
 
