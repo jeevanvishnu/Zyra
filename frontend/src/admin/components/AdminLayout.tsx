@@ -10,6 +10,7 @@ import {
     X,
 } from "lucide-react";
 import { motion } from "framer-motion";
+import { userAuthStore } from "../../store/UseUserStore";
 
 const sidebarItems = [
     { icon: LayoutDashboard, label: "Dashboard", path: "/admin/dashboard" },
@@ -20,10 +21,11 @@ const sidebarItems = [
 
 const AdminLayout = () => {
     const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+    const { logout } = userAuthStore();
     const navigate = useNavigate();
 
-    const handleLogout = () => {
-        // Navigate to admin login
+    const handleLogout = async () => {
+        await logout();
         navigate("/admin/login");
     };
 

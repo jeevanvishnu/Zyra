@@ -12,8 +12,10 @@ import cartRoutes from "./routes/user/cart.route.ts"
 import wishlistRoutes from "./routes/user/wishlist.route.ts"
 import orderRoutes from "./routes/user/order.route.ts"
 import adminOrderRoutes from "./routes/admin/order.route.ts"
+import adminBannerRoutes from "./routes/admin/banner.route.ts"
 import webhookRoutes from "./routes/user/webhook.route.ts"
 import userRoutes from "./routes/user/user.route.ts"
+import userBannerRoutes from "./routes/user/banner.route.ts"
 const app = express();
 
 app.use(express.json({
@@ -39,7 +41,9 @@ app.use('/api/wishlist', wishlistRoutes)
 app.use('/api/orders', orderRoutes)
 app.use('/api/orders/webhook', webhookRoutes)
 app.use('/api/admin/orders', adminOrderRoutes)
+app.use('/api/admin/banners', adminBannerRoutes)
 app.use('/api/products', productRoutes)
+app.use('/api/banners', userBannerRoutes)
 app.use('/api', userProduct)
 
 const PORT = process.env.PORT || 3000

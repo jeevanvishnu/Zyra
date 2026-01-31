@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import {
     AreaChart,
     Area,
@@ -10,7 +11,8 @@ import {
     Bar,
 } from "recharts";
 import { motion } from "framer-motion";
-import { TrendingUp, Users, ShoppingBag, DollarSign } from "lucide-react";
+import { TrendingUp, Users, ShoppingBag, DollarSign, Package, Loader } from "lucide-react";
+import { userAuthStore } from "../../store/UseUserStore";
 
 const salesData = [
     { name: "Jan", sales: 4000, revenue: 2400 },
@@ -67,34 +69,48 @@ const StatCard = ({
 );
 
 const Dashboard = () => {
+    const { dashboardStats, getAdminStats } = userAuthStore();
+
+    useEffect(() => {
+        getAdminStats();
+    }, [getAdminStats]);
+
+    if (!dashboardStats) {
+        return (
+            <div className="flex justify-center items-center py-20">
+                <Loader className="w-8 h-8 animate-spin text-gray-400" />
+            </div>
+        );
+    }
+
     return (
         <div className="space-y-8">
             {/* Stats Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 <StatCard
-                    title="Total Sales"
-                    value="₹1,24,592"
+                    title="Total Revenue"
+                    value={`₹${dashboardStats.totalRevenue.toLocaleString('en-IN')}`}
                     icon={DollarSign}
                     trend="+12.5%"
                     color="bg-black"
                 />
                 <StatCard
                     title="Total Orders"
-                    value="1,294"
+                    value={dashboardStats.totalOrders.toString()}
                     icon={ShoppingBag}
                     trend="+8.2%"
                     color="bg-gray-800"
                 />
                 <StatCard
                     title="Total Products"
-                    value="456"
-                    icon={Users} // Using Users for now as generic icon, maybe change to Package
+                    value={dashboardStats.totalProducts.toString()}
+                    icon={Package}
                     trend="+2.1%"
                     color="bg-gray-700"
                 />
                 <StatCard
-                    title="Active Users"
-                    value="8,920"
+                    title="Total Users"
+                    value={dashboardStats.totalUsers.toString()}
                     icon={Users}
                     trend="+15.3%"
                     color="bg-gray-900"

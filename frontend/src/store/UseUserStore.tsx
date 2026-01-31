@@ -43,6 +43,16 @@ interface Order {
     };
 }
 
+export interface IBanner {
+    _id: string;
+    title: string;
+    description?: string;
+    image: string;
+    link?: string;
+    isActive: boolean;
+    location: string;
+}
+
 interface AuthStore {
     user: any,
     isLoading: boolean;
@@ -70,6 +80,13 @@ interface AuthStore {
     },
     currentOrder: Order | null,
     addresses: Address[],
+    banners: IBanner[],
+    dashboardStats: {
+        totalOrders: number;
+        totalRevenue: number;
+        totalUsers: number;
+        totalProducts: number;
+    } | null,
     checkAuth: () => Promise<void>
     signup: (data: any) => Promise<void>;
     login: (data: any) => Promise<void>;
@@ -88,6 +105,13 @@ interface AuthStore {
     getOrderById: (id: string) => Promise<void>
     adminGetOrders: (params?: { page?: number; limit?: number }) => Promise<void>
     adminUpdateOrderStatus: (id: string, status: string) => Promise<void>
+    getAdminStats: () => Promise<void>
+    // Banners
+    getBanners: () => Promise<void>
+    adminGetBanners: () => Promise<void>
+    addBanner: (data: any) => Promise<void>
+    deleteBanner: (id: string) => Promise<void>
+    toggleBannerStatus: (id: string) => Promise<void>
     getOrders: (params?: { page?: number; limit?: number }) => Promise<void>
     getAddresses: () => Promise<void>
     addAddress: (address: Address) => Promise<void>
@@ -123,6 +147,8 @@ export const userAuthStore = create<AuthStore>((set) => ({
     },
     currentOrder: null,
     addresses: [],
+    banners: [],
+    dashboardStats: null,
 
     signup: async ({ name, email, password, confirmPassword }) => {
         set({ isLoading: true })
@@ -428,6 +454,68 @@ export const userAuthStore = create<AuthStore>((set) => ({
         } catch (error: any) {
             console.error("Failed to update order status", error);
             toast.error(error.response?.data?.message || "Failed to update order status");
+        }
+    },
+
+    getAdminStats: async () => {
+        try {
+            const res = await axios.get("/api/admin/orders/stats");
+            set({ dashboardStats: res.data });
+        } catch (error: any) {
+            console.error("Failed to fetch admin stats", error);
+        }
+    },
+
+    getBanners: async () => {
+        try {
+            const res = await axios.get("/api/banners");
+            set({ banners: res.data });
+        } catch (error: any) {
+            console.error("Failed to fetch banners", error);
+        }
+    },
+
+    adminGetBanners: async () => {
+        try {
+            const res = await axios.get("/api/admin/banners");
+            set({ banners: res.data });
+        } catch (error: any) {
+            console.error("Failed to fetch admin banners", error);
+        }
+    },
+
+    addBanner: async (data) => {
+        set({ isLoading: true });
+        try {
+            const res = await axios.post("/api/admin/banners", data);
+            toast.success(res.data.message);
+            set((state) => ({ banners: [res.data.banner, ...state.banners] }));
+        } catch (error: any) {
+            toast.error(error.response?.data?.message || "Failed to add banner");
+        } finally {
+            set({ isLoading: false });
+        }
+    },
+
+    deleteBanner: async (id) => {
+        try {
+            const res = await axios.delete(`/api/admin/banners/${id}`);
+            toast.success(res.data.message);
+            set((state) => ({ banners: state.banners.filter(b => b._id !== id) }));
+        } catch (error: any) {
+            toast.error(error.response?.data?.message || "Failed to delete banner");
+        }
+    },
+
+    toggleBannerStatus: async (id) => {
+        try {
+            const res = await axios.patch(`/api/admin/banners/${id}/toggle`);
+            toast.success(res.data.message);
+            set((state) => ({
+                banners: state.banners.map(b => b._id === id ? res.data.banner : b)
+            }));
+        } catch (error: any) {
+            toast.error(error.response?.data?.message || "Failed to toggle status");
         }
     },
 

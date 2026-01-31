@@ -10,6 +10,7 @@ import LoginPage from './users/pages/LoginPage';
 import SignupPage from './users/pages/SignupPage';
 import AdminLoginPage from './admin/pages/LoginPage';
 import AdminLayout from './admin/components/AdminLayout';
+import AdminProtectedRoute from './admin/components/AdminProtectedRoute';
 import Dashboard from './admin/pages/Dashboard';
 import Products from './admin/pages/Products';
 import Orders from './admin/pages/Orders';
@@ -64,12 +65,14 @@ const App = () => {
 
           {/* Admin Routes */}
           <Route path='/admin/login' element={<AdminLoginPage />} />
-          <Route path='/admin' element={<AdminLayout />}>
-            <Route index element={<Navigate to="dashboard" replace />} />
-            <Route path='dashboard' element={<Dashboard />} />
-            <Route path='products' element={<Products />} />
-            <Route path='orders' element={<Orders />} />
-            <Route path='banners' element={<Banners />} />
+          <Route element={<AdminProtectedRoute />}>
+            <Route path='/admin' element={<AdminLayout />}>
+              <Route index element={<Navigate to="dashboard" replace />} />
+              <Route path='dashboard' element={<Dashboard />} />
+              <Route path='products' element={<Products />} />
+              <Route path='orders' element={<Orders />} />
+              <Route path='banners' element={<Banners />} />
+            </Route>
           </Route>
         </Routes>
       </div>
