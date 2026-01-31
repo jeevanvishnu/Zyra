@@ -2,10 +2,20 @@ import { useState, useEffect } from "react";
 import { userAuthStore } from "../../store/UseUserStore";
 import { motion, AnimatePresence } from "framer-motion";
 import { User, Package, MapPin, LogOut, Plus, Trash2 } from "lucide-react";
+import { useSearchParams } from "react-router-dom";
 
 const AccountPage = () => {
     const { user, logout, orders, addresses, getOrders, getAddresses, addAddress, deleteAddress, updateProfile } = userAuthStore();
+    const [searchParams] = useSearchParams();
     const [activeTab, setActiveTab] = useState("profile");
+
+    useEffect(() => {
+        const tab = searchParams.get("tab");
+        if (tab === "orders" || tab === "addresses" || tab === "profile") {
+            setActiveTab(tab);
+        }
+    }, [searchParams]);
+
     const [isAddingAddress, setIsAddingAddress] = useState(false);
     const [newAddress, setNewAddress] = useState({
         street: "", city: "", state: "", zipCode: "", country: "India", phone: "", isDefault: false

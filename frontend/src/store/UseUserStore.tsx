@@ -68,6 +68,7 @@ interface AuthStore {
     getAddresses: () => Promise<void>
     addAddress: (address: Address) => Promise<void>
     deleteAddress: (id: string) => Promise<void>
+    updateAddress: (id: string, address: Address) => Promise<void>
     updateProfile: (data: { name?: string; email?: string, password?: string }) => Promise<void>
 }
 
@@ -362,6 +363,16 @@ export const userAuthStore = create<AuthStore>((set) => ({
             toast.success("Address deleted");
         } catch (error: any) {
             toast.error(error.response?.data?.message || "Failed to delete address");
+        }
+    },
+
+    updateAddress: async (id, address) => {
+        try {
+            const res = await axios.put(`/api/user/address/${id}`, address);
+            set({ addresses: res.data });
+            toast.success("Address updated successfully");
+        } catch (error: any) {
+            toast.error(error.response?.data?.message || "Failed to update address");
         }
     },
 

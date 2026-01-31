@@ -1,19 +1,27 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { userAuthStore } from "@/store/UseUserStore";
 import { useOrderStore } from "@/store/useOrderStore";
 import { useNavigate } from "react-router-dom";
 import { loadStripe } from "@stripe/stripe-js";
-import { Elements, useStripe, useElements } from "@stripe/react-stripe-js";
+import { Elements, useStripe, useElements, PaymentElement } from "@stripe/react-stripe-js";
 import { Loader2, CreditCard, Truck, Banknote } from "lucide-react";
 import toast from "react-hot-toast";
+import confetti from "canvas-confetti";
 
 // Replace with your publishable key
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || "");
 
 const CheckoutForm = () => {
-    const { cart } = userAuthStore();
+    const { cart, addresses, getAddresses, updateAddress } = userAuthStore();
     const { placeOrder, verifyPayment, loading } = useOrderStore();
     const navigate = useNavigate();
+    const [orderSuccess, setOrderSuccess] = useState(false);
+
+    useEffect(() => {
+        getAddresses();
+    }, []);
+
+    const [editingAddressId, setEditingAddressId] = useState<string | null>(null);
 
     const [shippingAddress, setShippingAddress] = useState({
         street: "",
@@ -34,6 +42,19 @@ const CheckoutForm = () => {
         setShippingAddress({ ...shippingAddress, [e.target.name]: e.target.value });
     };
 
+    const handleSaveAddress = async () => {
+        if (!shippingAddress.street || !shippingAddress.city || !shippingAddress.state || !shippingAddress.zipCode || !shippingAddress.phone) {
+            toast.error("Please fill in all details");
+            return;
+        }
+
+        if (editingAddressId) {
+            await updateAddress(editingAddressId, { ...shippingAddress, isDefault: false });
+            setEditingAddressId(null);
+            setShippingAddress({ street: "", city: "", state: "", zipCode: "", country: "India", phone: "" });
+        }
+    };
+
     const handlePlaceOrder = async (e: React.FormEvent) => {
         e.preventDefault();
 
@@ -49,8 +70,12 @@ const CheckoutForm = () => {
             });
 
             if (paymentMethod === "cod") {
-                toast.success("Order placed successfully!");
-                navigate("/admin/orders"); // Redirect to orders page (or user profile orders)
+                setOrderSuccess(true);
+                confetti({
+                    particleCount: 100,
+                    spread: 70,
+                    origin: { y: 0.6 }
+                });
             } else if (paymentMethod === "stripe") {
                 setClientSecret(data.clientSecret);
                 setOrderId(data.orderId);
@@ -78,14 +103,18 @@ const CheckoutForm = () => {
                         paymentId: response.razorpay_payment_id,
                         signature: response.razorpay_signature
                     });
-                    toast.success("Payment successful!");
-                    navigate("/admin/orders");
+                    setOrderSuccess(true);
+                    confetti({
+                        particleCount: 100,
+                        spread: 70,
+                        origin: { y: 0.6 }
+                    });
                 } catch (error) {
                     toast.error("Payment verification failed");
                 }
             },
             prefill: {
-                name: "User Name", // You can get this from user store
+                name: "User Name",
                 email: "user@example.com",
                 contact: shippingAddress.phone
             },
@@ -98,6 +127,26 @@ const CheckoutForm = () => {
         rzp1.open();
     };
 
+    if (orderSuccess) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
+                <div className="bg-white p-8 rounded-2xl shadow-xl text-center max-w-md w-full">
+                    <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                        <Truck className="w-8 h-8 text-green-600" />
+                    </div>
+                    <h1 className="text-2xl font-bold mb-2">Order Placed Successfully! 🎉</h1>
+                    <p className="text-gray-500 mb-6">Thank you for your purchase. Your order has been confirmed.</p>
+                    <button
+                        onClick={() => navigate("/account?tab=orders")}
+                        className="w-full py-3 bg-black text-white rounded-xl font-bold hover:bg-gray-800 transition-all"
+                    >
+                        View My Orders
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
             <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-12">
@@ -109,6 +158,73 @@ const CheckoutForm = () => {
                         <h2 className="text-xl font-bold mb-6 flex items-center gap-2">
                             <Truck className="w-5 h-5" /> Shipping Address
                         </h2>
+
+                        {/* Saved Addresses Selection */}
+                        {addresses.length > 0 && (
+                            <div className="mb-6 space-y-3">
+                                <p className="text-sm font-medium text-gray-700">Select Saved Address:</p>
+                                <div className="grid grid-cols-1 gap-3">
+                                    {addresses.map((addr, idx) => (
+                                        <div
+                                            key={idx}
+                                            onClick={() => {
+                                                if (editingAddressId !== addr._id) {
+                                                    setShippingAddress({
+                                                        street: addr.street,
+                                                        city: addr.city,
+                                                        state: addr.state,
+                                                        zipCode: addr.zipCode,
+                                                        country: addr.country,
+                                                        phone: addr.phone
+                                                    });
+                                                    setEditingAddressId(null);
+                                                }
+                                            }}
+                                            className={`p-4 rounded-xl border-2 cursor-pointer transition-all relative group ${shippingAddress.street === addr.street && shippingAddress.zipCode === addr.zipCode && !editingAddressId
+                                                ? 'border-black bg-gray-50'
+                                                : 'border-gray-100 hover:border-gray-200'
+                                                }`}
+                                        >
+                                            <div className="flex justify-between items-start">
+                                                <div>
+                                                    <p className="font-bold text-sm">{addr.street}</p>
+                                                    <p className="text-xs text-gray-500">{addr.city}, {addr.state} {addr.zipCode}</p>
+                                                    <p className="text-xs text-gray-500">{addr.phone}</p>
+                                                </div>
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setEditingAddressId(addr._id || null);
+                                                        setShippingAddress({
+                                                            street: addr.street,
+                                                            city: addr.city,
+                                                            state: addr.state,
+                                                            zipCode: addr.zipCode,
+                                                            country: addr.country,
+                                                            phone: addr.phone
+                                                        });
+                                                    }}
+                                                    className="text-xs font-bold underline text-gray-500 hover:text-black opacity-0 group-hover:opacity-100 transition-opacity"
+                                                >
+                                                    Edit
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                    <div
+                                        onClick={() => {
+                                            setShippingAddress({ street: "", city: "", state: "", zipCode: "", country: "India", phone: "" });
+                                            setEditingAddressId(null);
+                                        }}
+                                        className={`p-4 rounded-xl border-2 border-dashed cursor-pointer text-center text-sm font-medium transition-all ${!shippingAddress.street && !editingAddressId ? 'border-black text-black' : 'border-gray-200 text-gray-500 hover:border-gray-400'
+                                            }`}
+                                    >
+                                        + Add New Address
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
                         <div className="grid grid-cols-1 gap-4">
                             <input
                                 type="text"
@@ -154,6 +270,14 @@ const CheckoutForm = () => {
                                     className="w-full p-3 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-black/5"
                                 />
                             </div>
+                            {editingAddressId && (
+                                <button
+                                    onClick={handleSaveAddress}
+                                    className="w-full py-2 bg-gray-900 text-white rounded-lg font-bold text-sm hover:bg-gray-800 transition-all"
+                                >
+                                    Update Saved Address
+                                </button>
+                            )}
                         </div>
                     </div>
 
@@ -225,7 +349,7 @@ const CheckoutForm = () => {
                             </div>
                         ) : (
                             <Elements stripe={stripePromise} options={{ clientSecret }}>
-                                <StripePaymentForm orderId={orderId} />
+                                <StripePaymentForm orderId={orderId} setOrderSuccess={setOrderSuccess} />
                             </Elements>
                         )
                     )}
@@ -268,11 +392,10 @@ const CheckoutForm = () => {
 };
 
 // Stripe Payer Component
-const StripePaymentForm = ({ orderId }: { orderId: string }) => {
+const StripePaymentForm = ({ orderId, setOrderSuccess }: { orderId: string, setOrderSuccess: (val: boolean) => void }) => {
     const stripe = useStripe();
     const elements = useElements();
     const { verifyPayment } = useOrderStore();
-    const navigate = useNavigate();
     const [isProcessing, setIsProcessing] = useState(false);
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -299,8 +422,10 @@ const StripePaymentForm = ({ orderId }: { orderId: string }) => {
                     orderId,
                     paymentId: paymentIntent.id
                 });
+
+                setOrderSuccess(true);
                 toast.success("Payment successful!");
-                navigate("/admin/orders");
+
             } catch (err) {
                 toast.error("Verification failed");
             }
@@ -324,9 +449,5 @@ const StripePaymentForm = ({ orderId }: { orderId: string }) => {
         </form>
     );
 };
-
-// Use PaymentElement instead of CardElement for newer Stripe features if preferred, 
-// using CardElement here for simplicity with the installed version context.
-import { PaymentElement } from "@stripe/react-stripe-js";
 
 export default CheckoutForm;
