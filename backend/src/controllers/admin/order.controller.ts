@@ -7,10 +7,35 @@ export const getAllOrders = async (req: Request, res: Response) => {
     try {
         const page = parseInt(req.query.page as string) || 1;
         const limit = parseInt(req.query.limit as string) || 10;
+        const search = req.query.search as string || "";
         const skip = (page - 1) * limit;
 
-        const totalOrders = await Order.countDocuments();
-        const orders = await Order.find()
+        let query: any = {};
+
+        if (search) {
+            // Check if search might be an ID (typically 24 hex chars in MongoDB)
+            const isId = /^[0-9a-fA-F]{24}$/.test(search);
+
+            if (isId) {
+                query._id = search;
+            } else {
+                // Search in populated user fields (need to do this differently since query is on Order)
+                // Or search by a regex that covers name/email if we join/populate
+                // For MongoDB find, we might need to find users first or use aggregate for complex joins
+                const users = await User.find({
+                    $or: [
+                        { name: { $regex: search, $options: "i" } },
+                        { email: { $regex: search, $options: "i" } }
+                    ]
+                }).select("_id");
+
+                const userIds = users.map(u => u._id);
+                query.user = { $in: userIds };
+            }
+        }
+
+        const totalOrders = await Order.countDocuments(query);
+        const orders = await Order.find(query)
             .populate("user", "name email")
             .sort({ createdAt: -1 })
             .skip(skip)

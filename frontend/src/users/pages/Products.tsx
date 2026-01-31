@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Filter, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
 import ProductCard from '../../components/ProductCard';
 import { userAuthStore } from '../../store/UseUserStore';
@@ -12,6 +13,8 @@ const ProductsPage = () => {
     const [selectedPrice, setSelectedPrice] = useState("All");
     const [sortBy, setSortBy] = useState("featured");
     const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
+    const [searchParams] = useSearchParams();
+    const searchQuery = searchParams.get('search') || '';
 
     useEffect(() => {
         const fetchItems = async () => {
@@ -41,12 +44,13 @@ const ProductsPage = () => {
                 minPrice,
                 maxPrice,
                 sort,
+                search: searchQuery,
                 page: pagination.currentPage,
             });
         };
 
         fetchItems();
-    }, [selectedCategory, selectedPrice, sortBy, pagination.currentPage]);
+    }, [selectedCategory, selectedPrice, sortBy, pagination.currentPage, searchQuery]);
 
     const handlePageChange = (newPage: number) => {
         getAllProduct({

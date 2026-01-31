@@ -103,7 +103,7 @@ interface AuthStore {
     getWishlist: () => Promise<void>
     refreshToken: () => Promise<void>
     getOrderById: (id: string) => Promise<void>
-    adminGetOrders: (params?: { page?: number; limit?: number }) => Promise<void>
+    adminGetOrders: (params?: { page?: number; limit?: number; search?: string }) => Promise<void>
     adminUpdateOrderStatus: (id: string, status: string) => Promise<void>
     getAdminStats: () => Promise<void>
     // Banners
@@ -200,11 +200,19 @@ export const userAuthStore = create<AuthStore>((set) => ({
     logout: async () => {
         console.log("inside")
         try {
+            // Set flag to prevent unauthorized error notifications
+            (window as any).__isLoggingOut = true;
             await axios.post('/api/auth/logout')
             set({ user: null })
-            toast.success("Logout sucessfull")
+            toast.success("Logout successful")
         } catch (error: any) {
-            toast.error(error?.response?.data?.message || "An error occurred")
+            // Don't show error toast during logout
+            set({ user: null })
+        } finally {
+            // Clear the flag after a short delay
+            setTimeout(() => {
+                (window as any).__isLoggingOut = false;
+            }, 500);
         }
     },
 
@@ -255,7 +263,7 @@ export const userAuthStore = create<AuthStore>((set) => ({
             return res.data
         } catch (error: any) {
             set({ checkingAuth: false, user: null })
-            toast.error(error?.response?.data?.message || 'An error occurred')
+            throw error;
         }
     },
 
@@ -421,11 +429,11 @@ export const userAuthStore = create<AuthStore>((set) => ({
         }
     },
 
-    adminGetOrders: async (params: { page?: number; limit?: number } = {}) => {
+    adminGetOrders: async (params: { page?: number; limit?: number; search?: string } = {}) => {
         set({ isLoading: true });
         try {
-            const { page = 1, limit = 10 } = params;
-            const res = await axios.get(`/api/admin/orders?page=${page}&limit=${limit}`);
+            const { page = 1, limit = 10, search = "" } = params;
+            const res = await axios.get(`/api/admin/orders?page=${page}&limit=${limit}${search ? `&search=${encodeURIComponent(search)}` : ""}`);
             set({
                 adminOrders: res.data.orders,
                 adminOrderPagination: {
@@ -577,6 +585,11 @@ axios.interceptors.response.use(
     res => res,
     async error => {
         const originalRequest = error.config;
+
+        // Don't handle 401 errors during intentional logout
+        if ((window as any).__isLoggingOut) {
+            return Promise.reject(error);
+        }
 
         if (error.response?.status === 401 && !originalRequest._retry) {
             originalRequest._retry = true;

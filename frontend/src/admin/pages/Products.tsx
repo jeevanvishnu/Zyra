@@ -12,12 +12,21 @@ const Products = () => {
     // Actually, store has currentPage. Let's sync or just drive from URL/local state.
     // Simple approach: Use local state for page, call store.getAllProducts(page).
     const [currentPage, setCurrentPage] = useState(1);
+    const [searchTerm, setSearchTerm] = useState("");
+    const [debouncedSearch, setDebouncedSearch] = useState("");
 
     const { products, addProduct, editProduct, getAllProducts, loading, totalPages } = useProductStore();
 
     useEffect(() => {
-        getAllProducts(currentPage);
-    }, [getAllProducts, currentPage]);
+        const timer = setTimeout(() => {
+            setDebouncedSearch(searchTerm);
+        }, 500);
+        return () => clearTimeout(timer);
+    }, [searchTerm]);
+
+    useEffect(() => {
+        getAllProducts(currentPage, 4, debouncedSearch);
+    }, [getAllProducts, currentPage, debouncedSearch]);
 
 
     // Form state
@@ -211,6 +220,8 @@ const Products = () => {
                         <input
                             type="text"
                             placeholder="Search products..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
                             className="w-full pl-10 pr-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-black/5"
                         />
                     </div>

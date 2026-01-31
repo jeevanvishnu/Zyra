@@ -19,7 +19,7 @@ interface ProductStore {
   loading: boolean;
   totalPages: number;
   currentPage: number;
-  getAllProducts: (page?: number, limit?: number) => Promise<void>;
+  getAllProducts: (page?: number, limit?: number, search?: string) => Promise<void>;
   addProduct: (formData: FormData) => Promise<void>;
   editProduct: (id: string, formData: FormData) => Promise<void>;
   deleteProduct: (id: string) => Promise<void>;
@@ -31,11 +31,11 @@ export const useProductStore = create<ProductStore>((set, get) => ({
   totalPages: 1,
   currentPage: 1,
 
-  getAllProducts: async (page = 1, limit = 4) => {
+  getAllProducts: async (page = 1, limit = 4, search = "") => {
     try {
       set({ loading: true });
 
-      const res = await axios.get(`/api/products?page=${page}&limit=${limit}`);
+      const res = await axios.get(`/api/products?page=${page}&limit=${limit}${search ? `&search=${encodeURIComponent(search)}` : ""}`);
 
       set({
         products: res.data.products,
@@ -96,7 +96,7 @@ export const useProductStore = create<ProductStore>((set, get) => ({
   deleteProduct: async (id: string) => {
     set({ loading: true });
     try {
-      console.log(id,"id,,")
+      console.log(id, "id,,")
       await axios.delete(`/api/products/${id}`);
       const { currentPage } = get();
       await get().getAllProducts(currentPage);

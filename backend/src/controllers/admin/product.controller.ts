@@ -7,11 +7,17 @@ export const getAllProducts = async (req: Request, res: Response) => {
   try {
     const page = Number(req.query.page) || 1
     const limit = Number(req.query.limit) || 4
+    const search = req.query.search as string || ""
 
     const skip = (page - 1) * limit
 
-    const products = await Products.find().skip(skip).limit(limit)
-    const totalProducts = await Products.countDocuments();
+    const query: any = {};
+    if (search) {
+      query.ProductName = { $regex: search, $options: "i" };
+    }
+
+    const products = await Products.find(query).skip(skip).limit(limit)
+    const totalProducts = await Products.countDocuments(query);
 
     res.json({
       products,

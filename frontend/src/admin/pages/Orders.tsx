@@ -5,13 +5,22 @@ import { userAuthStore } from "../../store/UseUserStore";
 const Orders = () => {
     const { adminOrders, adminOrderPagination, adminGetOrders, adminUpdateOrderStatus, isLoading } = userAuthStore();
     const [selectedOrder, setSelectedOrder] = useState<any>(null);
+    const [searchTerm, setSearchTerm] = useState("");
+    const [debouncedSearch, setDebouncedSearch] = useState("");
 
     useEffect(() => {
-        adminGetOrders({ page: 1, limit: 10 });
-    }, []);
+        const timer = setTimeout(() => {
+            setDebouncedSearch(searchTerm);
+        }, 500);
+        return () => clearTimeout(timer);
+    }, [searchTerm]);
+
+    useEffect(() => {
+        adminGetOrders({ page: 1, limit: 10, search: debouncedSearch });
+    }, [debouncedSearch]);
 
     const handlePageChange = (newPage: number) => {
-        adminGetOrders({ page: newPage, limit: 10 });
+        adminGetOrders({ page: newPage, limit: 10, search: debouncedSearch });
     };
 
     const handleStatusChange = async (id: string, newStatus: string) => {
@@ -48,7 +57,9 @@ const Orders = () => {
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
                         <input
                             type="text"
-                            placeholder="Search orders..."
+                            placeholder="Search orders by ID or customer..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
                             className="w-full pl-10 pr-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-black/5"
                         />
                     </div>

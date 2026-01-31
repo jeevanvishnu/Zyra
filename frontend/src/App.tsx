@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import Navbar from './components/Navbar';
 import AccountPage from './users/pages/Account';
@@ -28,9 +28,9 @@ const App = () => {
   const cartCount = cart.reduce((acc, item) => acc + item.quantity, 0);
   const wishlistCount = wishlist.length;
 
+  const navigate = useNavigate();
   const handleSearch = (query: string) => {
-    console.log('Searching for:', query);
-
+    navigate(`/products?search=${encodeURIComponent(query)}`);
   };
   const location = useLocation();
   const isAdminRoute = location.pathname.startsWith('/admin');
