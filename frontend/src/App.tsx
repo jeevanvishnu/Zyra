@@ -14,6 +14,7 @@ import Products from './admin/pages/Products';
 import Orders from './admin/pages/Orders';
 import Banners from './admin/pages/Banners';
 import ProductDetails from './users/pages/ProductDetails';
+import CartPage from './users/pages/Cart';
 import { userAuthStore } from '@/store/UseUserStore';
 
 const App = () => {
@@ -51,11 +52,7 @@ const App = () => {
           <Route path='/product/:id' element={<ProductDetails />} />
           <Route path='/login' element={!user ? <LoginPage /> : <Navigate to={'/'} />} />
           <Route path='/signup' element={!user ? <SignupPage /> : <Navigate to={'/'} />} />
-          <Route path='/cart' element={
-            <div className="max-w-7xl mx-auto px-4 py-12">
-              <h1 className="text-3xl font-bold">Shopping Cart ({cartCount} items)</h1>
-            </div>
-          } />
+          <Route path='/cart' element={<CartPage />} />
           <Route path='/wishlist' element={
             <div className="max-w-7xl mx-auto px-4 py-12">
               <h1 className="text-3xl font-bold">Wishlist ({wishlistCount} items)</h1>

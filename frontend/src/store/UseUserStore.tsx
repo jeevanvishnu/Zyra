@@ -25,13 +25,17 @@ interface AuthStore {
     currentProduct: Product | null,
     cart: (Product & { quantity: number })[],
     checkAuth: () => Promise<void>
-    signup: (data: SignupPayload) => Promise<void>;
-    login: (data: LoginPayload) => Promise<void>;
-    logout: (data: LogoutPlayoad) => Promise<void>
+    signup: (data: any) => Promise<void>;
+    login: (data: any) => Promise<void>;
+    logout: () => Promise<void>
     fetchProducts: () => Promise<void>
     getAllProduct: (params?: { category?: string; minPrice?: string; maxPrice?: string; search?: string; sort?: string; page?: number; limit?: number }) => Promise<void>
     getProductById: (id: string) => Promise<void>
-    addToCart: (product: Product) => void
+    addToCart: (product: Product) => Promise<void>
+    getCartProducts: () => Promise<void>
+    updateQuantity: (productId: string, quantity: number) => Promise<void>
+    removeFromCart: (productId: string) => Promise<void>
+    clearCart: () => Promise<void>
     refreshToken: () => Promise<void>
 }
 
@@ -74,6 +78,7 @@ export const userAuthStore = create<AuthStore>((set) => ({
 
             set({ user: res?.data, isLoading: false })
             toast.success("Login successful")
+            userAuthStore.getState().getCartProducts()
             return res.data
         } catch (error: any) {
             set({ isLoading: false })
@@ -87,9 +92,9 @@ export const userAuthStore = create<AuthStore>((set) => ({
         try {
             const res = await axios.get('/api/auth/profile')
             set({ user: res.data, checkingAuth: false })
+            userAuthStore.getState().getCartProducts()
         } catch (err: any) {
             set({ checkingAuth: false, user: null })
-            toast.error(err?.response?.data?.message || 'An error occurred')
         }
     },
     logout: async () => {
@@ -165,20 +170,74 @@ export const userAuthStore = create<AuthStore>((set) => ({
         }
     },
 
-    addToCart: (product) => {
-        set((state) => {
-            const existingItem = state.cart.find((item) => item._id === product._id);
-            if (existingItem) {
-                toast.success(`Updated ${product.ProductName} quantity in cart`);
-                return {
-                    cart: state.cart.map((item) =>
-                        item._id === product._id ? { ...item, quantity: item.quantity + 1 } : item
-                    ),
-                };
+    getCartProducts: async () => {
+        try {
+            const res = await axios.get("/api/cart");
+            const transformedCart = res.data.map((item: any) => ({
+                ...item.product,
+                quantity: item.quantity
+            }));
+            set({ cart: transformedCart });
+        } catch (error: any) {
+            set({ cart: [] });
+            toast.error(error.response.data.message || "An error occurred");
+        }
+    },
+
+    addToCart: async (product) => {
+        try {
+            await axios.post("/api/cart", { productId: product._id });
+            toast.success("Added to cart");
+
+            set((state) => {
+                const existingItem = state.cart.find((item) => item._id === product._id);
+                if (existingItem) {
+                    return {
+                        cart: state.cart.map((item) =>
+                            item._id === product._id ? { ...item, quantity: item.quantity + 1 } : item
+                        ),
+                    };
+                }
+                return { cart: [...state.cart, { ...product, quantity: 1 }] };
+            });
+        } catch (error: any) {
+            toast.error(error.response.data.message || "An error occurred");
+        }
+    },
+
+    removeFromCart: async (productId) => {
+        try {
+            await axios.delete(`/api/cart`, { data: { productId } });
+            set((state) => ({ cart: state.cart.filter((item) => item._id !== productId) }));
+            toast.success("Removed from cart");
+        } catch (error: any) {
+            toast.error(error.response.data.message || "An error occurred");
+        }
+    },
+
+    updateQuantity: async (productId, quantity) => {
+        try {
+            if (quantity === 0) {
+                userAuthStore.getState().removeFromCart(productId);
+                return;
             }
-            toast.success(`Added ${product.ProductName} to cart`);
-            return { cart: [...state.cart, { ...product, quantity: 1 }] };
-        });
+
+            await axios.put(`/api/cart/${productId}`, { quantity });
+            set((state) => ({
+                cart: state.cart.map((item) => (item._id === productId ? { ...item, quantity } : item)),
+            }));
+        } catch (error: any) {
+            toast.error(error.response.data.message || "An error occurred");
+        }
+    },
+
+    clearCart: async () => {
+        try {
+            await axios.delete("/api/cart");
+            set({ cart: [] });
+        } catch (error: any) {
+            toast.error(error.response.data.message || "An error occurred");
+        }
     },
 
 
