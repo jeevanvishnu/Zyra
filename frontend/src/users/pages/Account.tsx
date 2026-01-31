@@ -2,11 +2,15 @@ import { useState, useEffect } from "react";
 import { userAuthStore } from "../../store/UseUserStore";
 import { motion, AnimatePresence } from "framer-motion";
 import { User, Package, MapPin, LogOut, Plus, Trash2 } from "lucide-react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
 
 const AccountPage = () => {
-    const { user, logout, orders, addresses, getOrders, getAddresses, addAddress, deleteAddress, updateProfile } = userAuthStore();
+    const {
+        user, logout, orders, addresses, getOrders, getAddresses,
+        addAddress, deleteAddress, updateProfile, orderPagination
+    } = userAuthStore();
     const [searchParams] = useSearchParams();
+    const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState("profile");
 
     useEffect(() => {
@@ -194,7 +198,12 @@ const AccountPage = () => {
                                 exit={{ opacity: 0, y: -10 }}
                                 className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8"
                             >
-                                <h1 className="text-2xl font-bold mb-6">Order History</h1>
+                                <div className="flex justify-between items-center mb-6">
+                                    <h1 className="text-2xl font-bold">Order History</h1>
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-sm text-gray-500">Total: {orderPagination.totalOrders}</span>
+                                    </div>
+                                </div>
                                 {orders.length === 0 ? (
                                     <div className="text-center py-12 text-gray-500">
                                         <Package className="w-12 h-12 mx-auto mb-4 opacity-20" />
@@ -203,11 +212,15 @@ const AccountPage = () => {
                                 ) : (
                                     <div className="space-y-4">
                                         {orders.map((order) => (
-                                            <div key={order._id} className="border border-gray-100 rounded-xl p-6 hover:shadow-md transition-shadow">
+                                            <div
+                                                key={order._id}
+                                                onClick={() => navigate(`/order/${order._id}`)}
+                                                className="border border-gray-100 rounded-xl p-6 hover:shadow-md transition-shadow cursor-pointer group"
+                                            >
                                                 <div className="flex flex-wrap justify-between items-start gap-4 mb-4">
                                                     <div>
                                                         <p className="text-xs text-gray-500 uppercase tracking-wider mb-1">Order ID</p>
-                                                        <p className="font-mono font-bold text-sm">#{order._id.slice(-6).toUpperCase()}</p>
+                                                        <p className="font-mono font-bold text-sm group-hover:text-black transition-colors">#{order._id.slice(-6).toUpperCase()}</p>
                                                     </div>
                                                     <div>
                                                         <p className="text-xs text-gray-500 uppercase tracking-wider mb-1">Date</p>
@@ -228,16 +241,51 @@ const AccountPage = () => {
                                                 </div>
                                                 <div className="bg-gray-50 p-4 rounded-lg">
                                                     <div className="space-y-2">
-                                                        {order.items.map((item: any, idx) => (
+                                                        {order.items.slice(0, 2).map((item: any, idx) => (
                                                             <div key={idx} className="flex justify-between text-sm">
                                                                 <span className="text-gray-600">{item.name} <span className="text-gray-400">x{item.quantity}</span></span>
                                                                 <span className="font-medium">₹{(item.price * item.quantity).toLocaleString('en-IN')}</span>
                                                             </div>
                                                         ))}
+                                                        {order.items.length > 2 && (
+                                                            <p className="text-xs text-gray-400 mt-1">+ {order.items.length - 2} more items</p>
+                                                        )}
                                                     </div>
+                                                </div>
+                                                <div className="mt-4 flex justify-end">
+                                                    <span className="text-sm font-bold underline opacity-0 group-hover:opacity-100 transition-opacity">View Full Details</span>
                                                 </div>
                                             </div>
                                         ))}
+
+                                        {/* Pagination Controls */}
+                                        {orderPagination.totalPages > 1 && (
+                                            <div className="flex justify-center items-center gap-4 pt-6">
+                                                <button
+                                                    disabled={orderPagination.currentPage === 1}
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        getOrders({ page: orderPagination.currentPage - 1 })
+                                                    }}
+                                                    className="px-4 py-2 border border-gray-200 rounded-lg text-sm font-medium disabled:opacity-50 hover:bg-gray-50 transition-colors"
+                                                >
+                                                    Previous
+                                                </button>
+                                                <span className="text-sm font-medium">
+                                                    Page {orderPagination.currentPage} of {orderPagination.totalPages}
+                                                </span>
+                                                <button
+                                                    disabled={orderPagination.currentPage === orderPagination.totalPages}
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        getOrders({ page: orderPagination.currentPage + 1 })
+                                                    }}
+                                                    className="px-4 py-2 border border-gray-200 rounded-lg text-sm font-medium disabled:opacity-50 hover:bg-gray-50 transition-colors"
+                                                >
+                                                    Next
+                                                </button>
+                                            </div>
+                                        )}
                                     </div>
                                 )}
                             </motion.div>

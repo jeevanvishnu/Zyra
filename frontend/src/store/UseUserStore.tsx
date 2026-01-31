@@ -32,6 +32,15 @@ interface Order {
     orderStatus: string;
     createdAt: string;
     paymentMethod: string;
+    user?: string | { _id: string; name: string; email: string };
+    shippingAddress: {
+        street: string;
+        city: string;
+        state: string;
+        zipCode: string;
+        country: string;
+        phone: string;
+    };
 }
 
 interface AuthStore {
@@ -48,6 +57,18 @@ interface AuthStore {
     cart: (Product & { quantity: number })[],
     wishlist: Product[],
     orders: Order[],
+    orderPagination: {
+        currentPage: number;
+        totalPages: number;
+        totalOrders: number;
+    },
+    adminOrders: Order[];
+    adminOrderPagination: {
+        currentPage: number;
+        totalPages: number;
+        totalOrders: number;
+    },
+    currentOrder: Order | null,
     addresses: Address[],
     checkAuth: () => Promise<void>
     signup: (data: any) => Promise<void>;
@@ -64,7 +85,10 @@ interface AuthStore {
     toggleWishlist: (productId: string) => Promise<void>
     getWishlist: () => Promise<void>
     refreshToken: () => Promise<void>
-    getOrders: () => Promise<void>
+    getOrderById: (id: string) => Promise<void>
+    adminGetOrders: (params?: { page?: number; limit?: number }) => Promise<void>
+    adminUpdateOrderStatus: (id: string, status: string) => Promise<void>
+    getOrders: (params?: { page?: number; limit?: number }) => Promise<void>
     getAddresses: () => Promise<void>
     addAddress: (address: Address) => Promise<void>
     deleteAddress: (id: string) => Promise<void>
@@ -85,6 +109,20 @@ export const userAuthStore = create<AuthStore>((set) => ({
     currentProduct: null,
     cart: [],
     wishlist: [],
+    orders: [],
+    orderPagination: {
+        currentPage: 1,
+        totalPages: 1,
+        totalOrders: 0
+    },
+    adminOrders: [],
+    adminOrderPagination: {
+        currentPage: 1,
+        totalPages: 1,
+        totalOrders: 0
+    },
+    currentOrder: null,
+    addresses: [],
 
     signup: async ({ name, email, password, confirmPassword }) => {
         set({ isLoading: true })
@@ -325,15 +363,71 @@ export const userAuthStore = create<AuthStore>((set) => ({
     },
 
 
-    orders: [],
-    addresses: [],
-
-    getOrders: async () => {
+    getOrders: async (params = {}) => {
+        set({ isLoading: true });
         try {
-            const res = await axios.get("/api/orders");
-            set({ orders: res.data });
+            const { page = 1, limit = 5 } = params;
+            const res = await axios.get(`/api/orders?page=${page}&limit=${limit}`);
+            set({
+                orders: res.data.orders,
+                orderPagination: {
+                    currentPage: res.data.currentPage,
+                    totalPages: res.data.totalPages,
+                    totalOrders: res.data.totalOrders
+                },
+                isLoading: false
+            });
         } catch (error: any) {
+            set({ isLoading: false });
             console.error("Failed to fetch orders", error);
+        }
+    },
+
+    getOrderById: async (id) => {
+        set({ isLoading: true });
+        try {
+            const res = await axios.get(`/api/orders/${id}`);
+            set({ currentOrder: res.data, isLoading: false });
+        } catch (error: any) {
+            set({ isLoading: false, currentOrder: null });
+            console.error("Failed to fetch order details", error);
+            toast.error(error.response?.data?.message || "Failed to fetch order details");
+        }
+    },
+
+    adminGetOrders: async (params: { page?: number; limit?: number } = {}) => {
+        set({ isLoading: true });
+        try {
+            const { page = 1, limit = 10 } = params;
+            const res = await axios.get(`/api/admin/orders?page=${page}&limit=${limit}`);
+            set({
+                adminOrders: res.data.orders,
+                adminOrderPagination: {
+                    currentPage: res.data.currentPage,
+                    totalPages: res.data.totalPages,
+                    totalOrders: res.data.totalOrders
+                },
+                isLoading: false
+            });
+        } catch (error: any) {
+            set({ isLoading: false });
+            console.error("Failed to fetch admin orders", error);
+            toast.error(error.response?.data?.message || "Failed to fetch orders");
+        }
+    },
+
+    adminUpdateOrderStatus: async (id, status) => {
+        try {
+            const res = await axios.put(`/api/admin/orders/${id}/status`, { orderStatus: status });
+            toast.success(res.data.message);
+            set((state) => ({
+                adminOrders: state.adminOrders.map(order =>
+                    order._id === id ? { ...order, orderStatus: status } : order
+                )
+            }));
+        } catch (error: any) {
+            console.error("Failed to update order status", error);
+            toast.error(error.response?.data?.message || "Failed to update order status");
         }
     },
 

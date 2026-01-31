@@ -11,10 +11,18 @@ import userProduct from "./routes/user/product.route.ts"
 import cartRoutes from "./routes/user/cart.route.ts"
 import wishlistRoutes from "./routes/user/wishlist.route.ts"
 import orderRoutes from "./routes/user/order.route.ts"
+import adminOrderRoutes from "./routes/admin/order.route.ts"
+import webhookRoutes from "./routes/user/webhook.route.ts"
 import userRoutes from "./routes/user/user.route.ts"
 const app = express();
 
-app.use(express.json());
+app.use(express.json({
+  verify: (req: any, res, buf) => {
+    if (req.originalUrl.startsWith('/api/orders/webhook')) {
+      req.rawBody = buf;
+    }
+  }
+}));
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser())
 
@@ -29,6 +37,8 @@ app.use('/api/user', userRoutes)
 app.use('/api/cart', cartRoutes)
 app.use('/api/wishlist', wishlistRoutes)
 app.use('/api/orders', orderRoutes)
+app.use('/api/orders/webhook', webhookRoutes)
+app.use('/api/admin/orders', adminOrderRoutes)
 app.use('/api/products', productRoutes)
 app.use('/api', userProduct)
 

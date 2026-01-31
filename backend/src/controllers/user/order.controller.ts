@@ -14,6 +14,34 @@ const razorpay = new Razorpay({
     key_secret: process.env.RAZORPAY_KEY_SECRET as string,
 });
 
+export const handleSuccessfulPayment = async (orderId: string, paymentId?: string) => {
+    const order = await Order.findById(orderId);
+    if (!order || order.paymentStatus === "paid") {
+        return order;
+    }
+
+    order.paymentStatus = "paid";
+    if (paymentId) {
+        if (order.paymentMethod === 'razorpay') order.razorpayPaymentId = paymentId;
+        if (order.paymentMethod === 'stripe') order.stripePaymentIntentId = paymentId;
+    }
+    await order.save();
+
+    // Clear cart
+    const user = await User.findById(order.user);
+    if (user) {
+        user.cartItems = [];
+        await user.save();
+    }
+
+    // Update stock
+    for (const item of order.items) {
+        await Products.findByIdAndUpdate(item.product, { $inc: { stock: -item.quantity } });
+    }
+
+    return order;
+};
+
 export const placeOrder = async (req: Request, res: Response) => {
     try {
         const { shippingAddress, paymentMethod } = req.body;
@@ -59,14 +87,7 @@ export const placeOrder = async (req: Request, res: Response) => {
                 orderStatus: "processing",
             });
 
-            // Clear cart
-            user.cartItems = [];
-            await user.save();
-
-            // Update stock
-            for (const item of orderItems) {
-                await Products.findByIdAndUpdate(item.product, { $inc: { stock: -item.quantity } });
-            }
+            await handleSuccessfulPayment(order._id as string);
 
             return res.status(201).json({ message: "Order placed successfully", order });
         }
@@ -87,6 +108,11 @@ export const placeOrder = async (req: Request, res: Response) => {
                 paymentMethod: "stripe",
                 paymentStatus: "pending",
                 stripePaymentIntentId: paymentIntent.id,
+            });
+
+            // Update payment intent with orderId for webhook identification
+            await stripe.paymentIntents.update(paymentIntent.id, {
+                metadata: { orderId: order._id.toString() }
             });
 
             return res.status(201).json({ clientSecret: paymentIntent.client_secret, orderId: order._id });
@@ -129,32 +155,11 @@ export const placeOrder = async (req: Request, res: Response) => {
 
 export const verifyPayment = async (req: Request, res: Response) => {
     try {
-        const { orderId, paymentId, signature } = req.body;
-        const userId = (req as any).user._id;
+        const { orderId, paymentId } = req.body;
 
-        // For simplicity, we are assuming successful verification calls from frontend for now
-        // In production, YOU MUST verify connection signature (Razorpay) or Webhook (Stripe)
-
-        // Simplistic update for demo purposes
-        const order = await Order.findById(orderId);
+        const order = await handleSuccessfulPayment(orderId, paymentId);
         if (!order) {
             return res.status(404).json({ message: "Order not found" });
-        }
-
-        order.paymentStatus = "paid";
-        order.paymentMethod === 'razorpay' ? order.razorpayPaymentId = paymentId : null;
-        await order.save();
-
-        // Clear cart after successful payment
-        const user = await User.findById(userId);
-        if (user) {
-            user.cartItems = [];
-            await user.save();
-        }
-
-        // Update stock
-        for (const item of order.items) {
-            await Products.findByIdAndUpdate(item.product, { $inc: { stock: -item.quantity } });
         }
 
         res.json({ message: "Payment verified and order confirmed" });
@@ -167,10 +172,42 @@ export const verifyPayment = async (req: Request, res: Response) => {
 export const getMyOrders = async (req: Request, res: Response) => {
     try {
         const userId = (req as any).user._id;
-        const orders = await Order.find({ user: userId }).sort({ createdAt: -1 });
-        res.json(orders);
+        const page = parseInt(req.query.page as string) || 1;
+        const limit = parseInt(req.query.limit as string) || 5;
+        const skip = (page - 1) * limit;
+
+        const totalOrders = await Order.countDocuments({ user: userId });
+        const orders = await Order.find({ user: userId })
+            .sort({ createdAt: -1 })
+            .skip(skip)
+            .limit(limit);
+
+        res.json({
+            orders,
+            currentPage: page,
+            totalPages: Math.ceil(totalOrders / limit),
+            totalOrders
+        });
     } catch (error: any) {
         console.error("Error in getMyOrders:", error);
         res.status(500).json({ message: "Failed to fetch orders" });
+    }
+};
+
+export const getOrderDetails = async (req: Request, res: Response) => {
+    try {
+        const userId = (req as any).user._id;
+        const { id } = req.params;
+
+        const order = await Order.findOne({ _id: id, user: userId });
+
+        if (!order) {
+            return res.status(404).json({ message: "Order not found" });
+        }
+
+        res.json(order);
+    } catch (error: any) {
+        console.error("Error in getOrderDetails:", error);
+        res.status(500).json({ message: "Failed to fetch order details" });
     }
 };

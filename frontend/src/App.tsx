@@ -18,6 +18,7 @@ import ProductDetails from './users/pages/ProductDetails';
 import CartPage from './users/pages/Cart';
 import WishlistPage from './users/pages/Wishlist';
 import CheckoutForm from './users/pages/Checkout';
+import OrderDetails from './users/pages/OrderDetails';
 import { userAuthStore } from '@/store/UseUserStore';
 
 const App = () => {
@@ -58,6 +59,7 @@ const App = () => {
           <Route path='/cart' element={<CartPage />} />
           <Route path='/checkout' element={user && cartCount > 0 ? <CheckoutForm /> : <Navigate to='/cart' />} />
           <Route path='/account' element={user ? <AccountPage /> : <Navigate to='/login' />} />
+          <Route path='/order/:id' element={user ? <OrderDetails /> : <Navigate to='/login' />} />
           <Route path='/wishlist' element={<WishlistPage />} />
 
           {/* Admin Routes */}
