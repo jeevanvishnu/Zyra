@@ -9,6 +9,7 @@ import '../src/lib/passport.ts'
 import passport from 'passport';
 import userProduct from "./routes/user/product.route.ts"
 import cartRoutes from "./routes/user/cart.route.ts"
+import wishlistRoutes from "./routes/user/wishlist.route.ts"
 const app = express();
 
 app.use(express.json());
@@ -23,8 +24,9 @@ app.use(cors({
 app.use(passport.initialize())
 app.use('/api/auth', authRoutes)
 app.use('/api/cart', cartRoutes)
-app.use('/api', userProduct)
+app.use('/api/wishlist', wishlistRoutes)
 app.use('/api/products', productRoutes)
+app.use('/api', userProduct)
 
 const PORT = process.env.PORT || 3000
 const start = () => {

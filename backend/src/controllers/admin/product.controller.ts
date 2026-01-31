@@ -1,7 +1,4 @@
-import User from "../../model/user.ts";
-import type { Response } from "express";
-import type { Request } from "express";
-import { log } from "node:console";
+import type { Request, Response } from "express";
 import { Products } from "../../model/productmodel.ts";
 import cloudinary from "../../lib/cloudinary.ts";
 
@@ -23,18 +20,16 @@ export const getAllProducts = async (req: Request, res: Response) => {
       totalProducts
     });
   } catch (error: any) {
-    log("Error coming from getAllProduct ", error.message);
+    console.error("Error in getAllProducts controller:", error);
     res.status(500).json({ message: "Something Wrong" });
   }
 };
 
 export const addProducts = async (req: Request, res: Response) => {
   try {
-    const { productName, price, stock, isActive, category, description } =
-      req.body;
+    const { productName, price, stock, isActive, category, description } = req.body;
 
-
-    if (!productName || !price || !category || !description || !stock) {
+    if (!productName || price === undefined || !category || !description || stock === undefined) {
       return res.status(400).json({ message: "All fields are required" });
     }
 
@@ -65,7 +60,7 @@ export const addProducts = async (req: Request, res: Response) => {
 
         imageUrls.push(cloudinaryResponse.secure_url);
       } catch (uploadError) {
-        log("Error uploading image to Cloudinary:", uploadError);
+        console.error("Error uploading image to Cloudinary:", uploadError);
         return res.status(500).json({ message: "Failed to upload images" });
       }
     }
@@ -86,8 +81,8 @@ export const addProducts = async (req: Request, res: Response) => {
       product,
     });
   } catch (error: any) {
-    log("Error is coming from addProducts", error.message);
-    res.status(500).json({ message: "Add Product failed" });
+    console.error("Error in addProducts controller:", error);
+    res.status(500).json({ message: "Add Product failed", error: error.message });
   }
 };
 
@@ -138,8 +133,8 @@ export const updateProduct = async (req: Request, res: Response) => {
       id,
       {
         ProductName: productName || product.ProductName,
-        price: price ? Number(price) : product.price,
-        stock: stock ? Number(stock) : product.stock,
+        price: price !== undefined ? Number(price) : product.price,
+        stock: stock !== undefined ? Number(stock) : product.stock,
         category: category || product.category,
         description: description || product.description,
         isActive: isActive !== undefined ? (isActive === 'true' || isActive === true) : product.isActive,
@@ -154,22 +149,21 @@ export const updateProduct = async (req: Request, res: Response) => {
     });
 
   } catch (error: any) {
-    log("Error in updateProduct", error.message);
+    console.error("Error in updateProduct controller:", error);
     res.status(500).json({ message: "Update Product failed" });
   }
 };
 
-export const deleteProduct = async (req:Request , res:Response) =>{
+export const deleteProduct = async (req: Request, res: Response) => {
   try {
-    const {id} = req.params
-    const product = await Products.findByIdAndDelete({_id:id})
-    if(!product){
-      return res.status(404).json({message:"product is not found"})
+    const { id } = req.params
+    const product = await Products.findByIdAndDelete({ _id: id })
+    if (!product) {
+      return res.status(404).json({ message: "product is not found" })
     }
-    res.status(200).json({message:"Product deleted successfully"})
-  } catch (error) {
-    log("Error is deleteProduct" , error.message)
-    res.status(500).json({message:"Product delete failed"})
+    res.status(200).json({ message: "Product deleted successfully" })
+  } catch (error: any) {
+    console.error("Error in deleteProduct controller:", error);
+    res.status(500).json({ message: "Product delete failed" });
   }
 }
-

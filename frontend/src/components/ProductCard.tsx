@@ -1,4 +1,4 @@
-import { ShoppingCart } from 'lucide-react';
+import { ShoppingCart, Heart } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { userAuthStore } from '@/store/UseUserStore';
 
@@ -16,7 +16,8 @@ interface ProductCardProps {
 }
 
 export default function ProductCard({ product }: ProductCardProps) {
-    const { addToCart } = userAuthStore();
+    const { addToCart, toggleWishlist, wishlist } = userAuthStore();
+    const isWishlisted = wishlist.some(p => p._id === product._id);
 
     return (
         <div className="group relative bg-white dark:bg-card border border-border rounded-xl overflow-hidden hover:shadow-lg hover:shadow-gray-200 dark:hover:shadow-gray-900/50 transition-all duration-300">
@@ -27,6 +28,20 @@ export default function ProductCard({ product }: ProductCardProps) {
                     alt={product?.ProductName}
                     className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-500"
                 />
+
+                {/* Wishlist Button */}
+                <button
+                    onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        toggleWishlist(product._id!);
+                    }}
+                    className="absolute top-4 right-4 p-2 bg-white/90 dark:bg-black/90 rounded-full shadow-md z-10 transition-all hover:scale-110 active:scale-90 group/wishlist"
+                >
+                    <Heart
+                        className={`w-5 h-5 transition-colors ${isWishlisted ? 'fill-red-500 text-red-500' : 'text-gray-600 group-hover/wishlist:text-red-500'}`}
+                    />
+                </button>
 
                 {/* Quick Add Button (visible on hover) */}
                 <button

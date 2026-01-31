@@ -24,6 +24,7 @@ interface AuthStore {
     },
     currentProduct: Product | null,
     cart: (Product & { quantity: number })[],
+    wishlist: Product[],
     checkAuth: () => Promise<void>
     signup: (data: any) => Promise<void>;
     login: (data: any) => Promise<void>;
@@ -36,6 +37,8 @@ interface AuthStore {
     updateQuantity: (productId: string, quantity: number) => Promise<void>
     removeFromCart: (productId: string) => Promise<void>
     clearCart: () => Promise<void>
+    toggleWishlist: (productId: string) => Promise<void>
+    getWishlist: () => Promise<void>
     refreshToken: () => Promise<void>
 }
 
@@ -51,6 +54,7 @@ export const userAuthStore = create<AuthStore>((set) => ({
     },
     currentProduct: null,
     cart: [],
+    wishlist: [],
 
     signup: async ({ name, email, password, confirmPassword }) => {
         set({ isLoading: true })
@@ -79,6 +83,7 @@ export const userAuthStore = create<AuthStore>((set) => ({
             set({ user: res?.data, isLoading: false })
             toast.success("Login successful")
             userAuthStore.getState().getCartProducts()
+            userAuthStore.getState().getWishlist()
             return res.data
         } catch (error: any) {
             set({ isLoading: false })
@@ -93,6 +98,7 @@ export const userAuthStore = create<AuthStore>((set) => ({
             const res = await axios.get('/api/auth/profile')
             set({ user: res.data, checkingAuth: false })
             userAuthStore.getState().getCartProducts()
+            userAuthStore.getState().getWishlist()
         } catch (err: any) {
             set({ checkingAuth: false, user: null })
         }
@@ -186,15 +192,23 @@ export const userAuthStore = create<AuthStore>((set) => ({
 
     addToCart: async (product) => {
         try {
-            await axios.post("/api/cart", { productId: product._id });
-            toast.success("Added to cart");
+            const res = await axios.post("/api/cart", { productId: product._id });
+            const { message, status } = res.data;
+
+            if (status === "warning") {
+                toast.error(message);
+            } else {
+                toast.success(message);
+            }
 
             set((state) => {
                 const existingItem = state.cart.find((item) => item._id === product._id);
                 if (existingItem) {
                     return {
                         cart: state.cart.map((item) =>
-                            item._id === product._id ? { ...item, quantity: item.quantity + 1 } : item
+                            item._id === product._id
+                                ? { ...item, quantity: status === "warning" ? product.stock : item.quantity + 1 }
+                                : item
                         ),
                     };
                 }
@@ -217,14 +231,28 @@ export const userAuthStore = create<AuthStore>((set) => ({
 
     updateQuantity: async (productId, quantity) => {
         try {
-            if (quantity === 0) {
+            if (quantity <= 0) {
                 userAuthStore.getState().removeFromCart(productId);
                 return;
             }
 
-            await axios.put(`/api/cart/${productId}`, { quantity });
+            const res = await axios.put(`/api/cart/${productId}`, { quantity });
+            const { message, status } = res.data;
+
+            if (status === "warning") {
+                toast.error(message);
+            }
+
             set((state) => ({
-                cart: state.cart.map((item) => (item._id === productId ? { ...item, quantity } : item)),
+                cart: state.cart.map((item) => {
+                    if (item._id === productId) {
+                        return {
+                            ...item,
+                            quantity: status === "warning" ? item.stock : quantity
+                        };
+                    }
+                    return item;
+                }),
             }));
         } catch (error: any) {
             toast.error(error.response.data.message || "An error occurred");
@@ -235,6 +263,32 @@ export const userAuthStore = create<AuthStore>((set) => ({
         try {
             await axios.delete("/api/cart");
             set({ cart: [] });
+        } catch (error: any) {
+            toast.error(error.response.data.message || "An error occurred");
+        }
+    },
+
+    getWishlist: async () => {
+        try {
+            const res = await axios.get("/api/wishlist");
+            set({ wishlist: res.data });
+        } catch (error: any) {
+            set({ wishlist: [] });
+            console.error("Error in getWishlist store action", error);
+        }
+    },
+
+    toggleWishlist: async (productId) => {
+        try {
+            await axios.post("/api/wishlist/toggle", { productId });
+            await userAuthStore.getState().getWishlist();
+
+            const isNowWishlisted = userAuthStore.getState().wishlist.some(p => p._id === productId);
+            if (isNowWishlisted) {
+                toast.success("Added to wishlist");
+            } else {
+                toast.success("Removed from wishlist");
+            }
         } catch (error: any) {
             toast.error(error.response.data.message || "An error occurred");
         }

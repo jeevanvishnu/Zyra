@@ -9,7 +9,8 @@ interface userData {
     cartItems: {
         product: mongoose.Types.ObjectId,
         quantity: number
-    }[]
+    }[],
+    wishlist: mongoose.Types.ObjectId[]
 }
 
 const userSchema = new Schema<userData>({
@@ -44,6 +45,12 @@ const userSchema = new Schema<userData>({
                 type: Schema.Types.ObjectId,
                 ref: "Products",
             },
+        },
+    ],
+    wishlist: [
+        {
+            type: Schema.Types.ObjectId,
+            ref: "Products",
         },
     ],
 }, { timestamps: true })
